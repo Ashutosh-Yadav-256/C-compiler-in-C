@@ -1,0 +1,6 @@
+bin/
+obj/
+*.o
+*.asm
+*.exe
+tests/*_bin

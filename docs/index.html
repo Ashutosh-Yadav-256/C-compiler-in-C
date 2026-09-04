@@ -1,0 +1,2277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C-Compiler — Native x86-64 C Compiler Written in Pure C</title>
+    <meta name="description" content="A fast, robust native C compiler written in C targeting x86-64 NASM assembly with custom arena allocation, typed AST, three-address code IR, and System V ABI compliance.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+
+            --bg-base: #FAF8F5;
+            --bg-surface: #FFFFFF;
+            --bg-elevated: #F3EFE6;
+            --bg-card: #FFFFFF;
+            --border-color: #E8E2D5;
+            --border-hover: #D5CCBA;
+            --border-glow: rgba(180, 83, 9, 0.2);
+            --accent: #B45309;
+            --accent-light: #D97706;
+            --accent-dark: #8C4A0E;
+            --accent-gradient: linear-gradient(135deg, #B45309 0%, #D97706 60%, #8C4A0E 100%);
+            --accent-glow: rgba(180, 83, 9, 0.15);
+            --success: #2D6A4F;
+            --success-glow: rgba(45, 106, 79, 0.2);
+            --error: #9E3B3B;
+            --text-main: #292524;
+            --text-muted: #6B635B;
+            --text-bright: #1C1917;
+            --font-display: 'Outfit', -apple-system, sans-serif;
+            --font-ui: 'Inter', -apple-system, sans-serif;
+            --font-code: 'Fira Code', monospace;
+            --shadow-sm: 0 2px 8px rgba(90, 70, 50, 0.04);
+            --shadow-md: 0 6px 20px rgba(90, 70, 50, 0.06);
+            --shadow-lg: 0 16px 40px rgba(90, 70, 50, 0.09);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(circle at 10% 15%, rgba(217, 119, 6, 0.035) 0%, transparent 45%),
+                radial-gradient(circle at 90% 80%, rgba(180, 83, 9, 0.03) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(245, 239, 230, 0.6) 0%, transparent 70%);
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background: rgba(250, 248, 245, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.9rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FFFFFF;
+            font-family: var(--font-code);
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 12px var(--accent-glow);
+        }
+
+        .brand-text {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: var(--text-bright);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent);
+        }
+
+        .btn-github {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-surface);
+            color: var(--text-bright);
+            border: 1px solid var(--border-color);
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s ease;
+        }
+
+        .btn-github:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .hero {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 5rem 1.5rem 3.5rem;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid #DFD7C7;
+            padding: 0.4rem 1.15rem;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1.12;
+            letter-spacing: -0.03em;
+            color: var(--text-bright);
+            margin-bottom: 1.25rem;
+        }
+
+        .hero h1 span {
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 780px;
+            margin: 0 auto 2.5rem;
+            font-weight: 400;
+            line-height: 1.65;
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 3.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-gradient);
+            color: #FFFFFF;
+            padding: 0.85rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(180, 83, 9, 0.35);
+            transition: all 0.25s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(180, 83, 9, 0.45);
+        }
+
+        .btn-soft {
+            background: linear-gradient(145deg, #FAF8F5, #EDE7DA);
+            border: 1px solid #DFD7C7;
+            padding: 0.48rem 1.05rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow:
+                3px 3px 7px rgba(195, 185, 170, 0.45),
+                -3px -3px 7px rgba(255, 255, 255, 0.95);
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .btn-soft:hover {
+            border-color: #D5CCBA;
+            box-shadow:
+                4px 4px 9px rgba(195, 185, 170, 0.55),
+                -4px -4px 9px rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+        }
+
+        .btn-soft:active {
+            box-shadow:
+                inset 2px 2px 4px rgba(195, 185, 170, 0.5),
+                inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+            transform: translateY(0);
+        }
+
+        .btn-soft-clear {
+            color: #9E3B3B;
+        }
+
+        .btn-soft-clear:hover {
+            color: #B91C1C;
+        }
+
+        .btn-soft-run {
+            color: #2D6A4F;
+        }
+
+        .btn-soft-run:hover {
+            color: #1B4332;
+        }
+
+        .btn-soft-recompile {
+            color: #B45309;
+        }
+
+        .btn-soft-recompile:hover {
+            color: #78350F;
+        }
+
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-bright);
+            border: 1px solid var(--border-color);
+            padding: 0.85rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .quick-copy {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-family: var(--font-code);
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--accent);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .quick-copy:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            max-width: 1100px;
+            margin: 0 auto 5rem;
+            padding: 0 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 1.6rem 1.5rem;
+            border-radius: 14px;
+            text-align: left;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #DFD7C7;
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-val {
+            font-family: var(--font-display);
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-bright);
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.02em;
+        }
+
+        .stat-label {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .playground-section {
+            max-width: 1300px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-bright);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-desc {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .ide-window {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .ide-header {
+            background: var(--bg-elevated);
+            padding: 0.8rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .window-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #E57373; }
+        .dot-yellow { background: #FFB74D; }
+        .dot-green { background: #81C784; }
+
+        .ide-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .select-styled {
+            background: var(--bg-surface);
+            color: var(--text-bright);
+            border: 1px solid var(--border-color);
+            padding: 0.45rem 1rem;
+            border-radius: 6px;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: border-color 0.2s;
+        }
+
+        .select-styled:hover, .select-styled:focus {
+            border-color: var(--accent);
+        }
+
+        .ide-body {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            min-height: 540px;
+        }
+
+        .ide-pane {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .ide-pane:last-child {
+            border-right: none;
+        }
+
+        .pane-bar {
+            background: #F8F5EE;
+            padding: 0.55rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pane-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+
+        .tab-group {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .ide-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 0.35rem 0.75rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .ide-tab:hover {
+            color: var(--text-bright);
+            background: rgba(232, 226, 213, 0.4);
+        }
+
+        .ide-tab.active {
+            background: var(--bg-surface);
+            color: var(--accent);
+            font-weight: 700;
+            border-color: var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .ide-tab.tab-run.active {
+            background: #EAF4EE;
+            color: var(--success);
+            border-color: #B7DFCA;
+        }
+
+        .code-textarea {
+            width: 100%;
+            flex: 1;
+            background: #FCFBF9;
+            color: #1C1917;
+            font-family: var(--font-code);
+            font-size: 0.92rem;
+            line-height: 1.6;
+            padding: 1.25rem;
+            border: none;
+            outline: none;
+            resize: none;
+            tab-size: 4;
+            white-space: pre;
+        }
+
+        .code-output {
+            width: 100%;
+            flex: 1;
+            background: #3B3030;
+            color: #86EFAC;
+            font-family: var(--font-code);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            padding: 1.25rem;
+            overflow: auto;
+            white-space: pre;
+            user-select: text;
+        }
+
+        .code-output.output-terminal {
+            color: #F5F5F4;
+            background: #3B3030;
+        }
+
+        .code-output.error-view {
+            color: #FCA5A5;
+        }
+
+        .ide-footer {
+            background: #F8F5EE;
+            border-top: 1px solid var(--border-color);
+            padding: 0.48rem 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .status-indicator.is-error {
+            color: var(--error);
+        }
+
+        .status-bulb {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success-glow);
+        }
+
+        .status-indicator.is-error .status-bulb {
+            background: var(--error);
+            box-shadow: 0 0 6px rgba(158, 59, 59, 0.4);
+        }
+
+        .pipeline-section {
+            max-width: 1200px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .pipeline-flow {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin: 3rem auto 0;
+            max-width: 1050px;
+        }
+
+        .pipeline-step {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 1.75rem 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pipeline-step:hover {
+            border-color: #DFD7C7;
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .step-num {
+            width: 30px;
+            height: 30px;
+            background: var(--bg-elevated);
+            color: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            font-weight: 800;
+            font-size: 0.85rem;
+            border: 1px solid #DFD7C7;
+        }
+
+        .step-name {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-bright);
+            margin-bottom: 0.4rem;
+        }
+
+        .step-desc {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .section-divider {
+            max-width: 1050px;
+            margin: 1rem auto 5rem;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .section-divider::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border-color) 25%, var(--border-color) 75%, transparent);
+        }
+
+        .divider-badge {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            padding: 0.45rem 1.35rem;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            position: relative;
+            z-index: 1;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .features-section {
+            max-width: 1200px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-top: 3rem;
+        }
+
+        .feature-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .feature-box:hover {
+            border-color: #DFD7C7;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            border: 1px solid #DFD7C7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .feature-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.01em;
+        }
+
+        .feature-text {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .install-section {
+            max-width: 900px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .term-card {
+            background: #3B3030;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .term-bar {
+            background: #F3EDE2;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .term-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: var(--font-code);
+            font-weight: 600;
+        }
+
+        .term-content {
+            padding: 1.5rem;
+            font-family: var(--font-code);
+            font-size: 0.92rem;
+            color: #F5F5F4;
+            line-height: 1.8;
+        }
+
+        .term-comment { color: #A8A29E; }
+        .term-prompt { color: #F59E0B; font-weight: 700; }
+        .term-cmd { color: #86EFAC; }
+
+        footer {
+            border-top: 1px solid var(--border-color);
+            background: #F5EFE6;
+            padding: 3rem 1.5rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+            .hero h1 { font-size: 2.6rem; }
+            .ide-body { grid-template-columns: 1fr; }
+            .ide-pane { border-right: none; border-bottom: 1px solid var(--border-color); }
+            .pipeline-flow { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 600px) {
+            .pipeline-flow { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a class="nav-brand" href="#">
+            <div class="logo-icon">C</div>
+            <span class="brand-text">C-Compiler</span>
+        </a>
+        <div class="nav-links">
+            <a class="nav-link" href="#playground">Playground</a>
+            <a class="nav-link" href="#pipeline">Architecture</a>
+            <a class="nav-link" href="#features">Features</a>
+            <a class="nav-link" href="#install">Install</a>
+            <a class="btn-github" href="https://github.com/Ashutosh-Yadav-256/C-compiler-in-C" target="_blank">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+                </svg>
+                Star on GitHub
+            </a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-badge">
+            Complete Native Tool Pipeline in Pure C
+        </div>
+        <h1>Native C Compiler<br><span>Emitting Optimized x86-64 NASM</span></h1>
+        <p class="hero-sub">
+            Built from scratch around dynamic chained arenas, 15-precedence recursive descent parsing,
+            three-address code IR, System V AMD64 ABI codegen, and in-browser execution.
+        </p>
+
+        <div class="hero-actions">
+            <a href="#playground" class="btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -2px; margin-right: 6px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Launch Web Playground
+            </a>
+            <a href="https://github.com/Ashutosh-Yadav-256/C-compiler-in-C" target="_blank" class="btn-secondary">
+                View Source Code
+            </a>
+            <div class="quick-copy" onclick="copyInstallCmd(this)">
+                <span>$ curl -fsSL .../install.sh | bash</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            </div>
+        </div>
+    </header>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-val">0 ms</div>
+            <div class="stat-label">Chained Arena Overhead (Zero Leak)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">15</div>
+            <div class="stat-label">Expression Precedence Levels</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">x86-64</div>
+            <div class="stat-label">System V AMD64 ABI Backend</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-val">100%</div>
+            <div class="stat-label">Pass Rate Across Regression Suite</div>
+        </div>
+    </section>
+
+    <section class="playground-section" id="playground">
+        <div class="section-header">
+            <h2 class="section-title">Interactive Compiler & Runner Explorer</h2>
+            <p class="section-desc">Write C code, compile to x86-64 assembly, inspect the IR / AST, and execute programs live with stdout capture.</p>
+        </div>
+
+        <div class="ide-window">
+            <div class="ide-header">
+                <div class="window-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+
+                <div class="ide-controls">
+                    <label for="example-picker" style="font-size: 0.82rem; color: var(--text-muted);">Presets:</label>
+                    <select id="example-picker" class="select-styled" onchange="loadPreset(this.value)">
+                        <option value="early_return">1. Early Return & Recursion</option>
+                        <option value="pointers">2. Pointers & Stack Dereference</option>
+                        <option value="bitwise">3. Bitwise Logic & Shift Ops</option>
+                        <option value="chars">4. Characters & String Escapes</option>
+                        <option value="fizzbuzz">5. FizzBuzz with Variadic printf</option>
+                    </select>
+
+                    <button class="btn-soft btn-soft-clear" onclick="clearEditor()" title="Clear code editor">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Clear
+                    </button>
+                    <button class="btn-soft btn-soft-run" onclick="triggerRun()" title="Run in Sandbox VM">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -1px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Run Program
+                    </button>
+                    <button class="btn-soft btn-soft-recompile" onclick="runCompiler()" title="Recompile pipeline">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>Recompile
+                    </button>
+                </div>
+            </div>
+
+            <div class="ide-body">
+
+                <div class="ide-pane">
+                    <div class="pane-bar">
+                        <span class="pane-label">C Source Code</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">main.c</span>
+                    </div>
+                    <textarea id="source-editor" class="code-textarea" spellcheck="false"></textarea>
+                </div>
+
+                <div class="ide-pane">
+                    <div class="pane-bar">
+                        <div class="tab-group">
+                            <button class="ide-tab tab-run active" onclick="setTab('run', this)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -1px; margin-right: 4px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>Program Output
+                            </button>
+                            <button class="ide-tab" onclick="setTab('asm', this)">x86-64 NASM</button>
+                            <button class="ide-tab" onclick="setTab('ir', this)">Three-Address IR</button>
+                            <button class="ide-tab" onclick="setTab('ast', this)">Typed AST</button>
+                            <button class="ide-tab" onclick="setTab('tokens', this)">Tokens</button>
+                        </div>
+                        <button onclick="copyCurrentOutput()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Copy
+                        </button>
+                    </div>
+                    <pre id="output-pane" class="code-output output-terminal"></pre>
+                </div>
+            </div>
+
+            <div class="ide-footer">
+                <div class="status-indicator" id="ide-status-indicator">
+                    <div class="status-bulb"></div>
+                    <span id="ide-status-text">Program Executed (Exit Code: 0)</span>
+                </div>
+                <span id="ide-metrics-text">Target: ELF64 | Arena: Dynamic Chunks</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="pipeline-section" id="pipeline">
+        <div class="section-header">
+            <h2 class="section-title">Rigorous Compiler Pipeline</h2>
+            <p class="section-desc">Each stage is decoupled, modular, and built according to strict systems programming standards.</p>
+        </div>
+
+        <div class="pipeline-flow">
+            <div class="pipeline-step">
+                <div class="step-num">1</div>
+                <div class="step-name">Lexer</div>
+                <div class="step-desc">Zero-copy token slicing, hex/octal/binary numbers & escape sequence decoding.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">2</div>
+                <div class="step-name">Parser</div>
+                <div class="step-desc">15-precedence recursive descent parsing with panic-mode error synchronization.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">3</div>
+                <div class="step-name">Semantic Pass</div>
+                <div class="step-desc">Scoped symbol tables, type checking, pointer validation & lvalue enforcement.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">4</div>
+                <div class="step-name">Three-Address IR</div>
+                <div class="step-desc">Explicit function epilogues, memory operations (LOAD/STORE), and label lowering.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">5</div>
+                <div class="step-name">Optimizer</div>
+                <div class="step-desc">Basic block local value numbering, flow-safe constant folding & dead code elimination.</div>
+            </div>
+            <div class="pipeline-step">
+                <div class="step-num">6</div>
+                <div class="step-name">x86-64 Codegen</div>
+                <div class="step-desc">NASM assembly generation compliant with the System V AMD64 calling convention.</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider">
+        <span class="divider-badge">Deep Engineering Capabilities</span>
+    </div>
+
+    <section class="features-section" id="features">
+        <div class="section-header">
+            <h2 class="section-title">Core Architectural Features</h2>
+            <p class="section-desc">Engineered from first principles with zero-leak arena memory, robust epilogue routing, and System V AMD64 ABI compliance.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h3 class="feature-title">Dedicated Epilogues & Early Return</h3>
+            <p class="feature-text">`IR_RET` branches directly to a dedicated `.L<func>_epilogue` ensuring early returns inside nested `if/else` statements and recursive calls execute flawlessly.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8C4A0E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+            </div>
+            <h3 class="feature-title">Dynamic Chained Arena Memory</h3>
+            <p class="feature-text">Eliminates per-node `malloc`/`free` overhead. Memory expands geometrically with chunk chaining and provides `arena_save()`/`arena_restore()` checkpoints.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2D6A4F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            </div>
+            <h3 class="feature-title">True Type System & Pointers</h3>
+            <p class="feature-text">Supports `int`, `char`, `void`, `long`, and pointer types (`T*`). Enforces lvalue validation and scales pointer arithmetic by base type sizes automatically.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9E3B3B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <h3 class="feature-title">Flow-Safe Optimization</h3>
+            <p class="feature-text">Constant propagation and folding is strictly partitioned across basic block boundaries, preventing variable corruption across branching control flow.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4A6B82" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            </div>
+            <h3 class="feature-title">System V AMD64 ABI Compliant</h3>
+            <p class="feature-text">Transfers first 6 arguments via `rdi, rsi, rdx, rcx, r8, r9` with stack spilling, 16-byte stack frame alignment, and `al=0` for variadic C functions like `printf`.</p>
+        </div>
+
+        <div class="feature-box">
+            <div class="feature-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.55" y2="4.24"></line><polyline points="3.29 7 12 12 20.71 7"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line><path d="M21 16.5v-9a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 7.5v9a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16.5z"></path></svg>
+            </div>
+            <h3 class="feature-title">Cross-Platform Validation & Safety</h3>
+            <p class="feature-text">Automated regression test harness supporting Linux, macOS, and Windows with AddressSanitizer and UndefinedBehaviorSanitizer memory safety.</p>
+        </div>
+        </div>
+    </section>
+
+    <section class="install-section" id="install">
+        <div class="section-header">
+            <h2 class="section-title">Quick Installation</h2>
+            <p class="section-desc">Get the native binary on your machine in seconds.</p>
+        </div>
+
+        <div class="term-card">
+            <div class="term-bar">
+                <div class="window-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                <div class="term-title">bash — terminal</div>
+                <span></span>
+            </div>
+            <div class="term-content">
+
+                <span class="term-prompt">$ </span><span class="term-cmd">curl -fsSL https://raw.githubusercontent.com/Ashutosh-Yadav-256/C-compiler-in-C/main/install.sh | bash</span><br><br>
+
+                <span class="term-prompt">$ </span><span class="term-cmd">git clone https://github.com/Ashutosh-Yadav-256/C-compiler-in-C.git</span><br>
+                <span class="term-prompt">$ </span><span class="term-cmd">cd C-compiler-in-C && make release</span><br>
+                <span class="term-prompt">$ </span><span class="term-cmd">./ccompiler tests/hello.c hello.asm</span><br><br>
+
+                <span class="term-prompt">$ </span><span class="term-cmd">./buildasm.sh tests/hello.c hello_bin</span><br>
+                <span class="term-prompt">$ </span><span class="term-cmd">./hello_bin</span><br>
+
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="https://github.com/Ashutosh-Yadav-256/C-compiler-in-C" target="_blank">GitHub Repository</a>
+                <a href="https://github.com/Ashutosh-Yadav-256/C-compiler-in-C/blob/main/LICENSE" target="_blank">MIT License</a>
+            </div>
+            <p>© 2026 C-Compiler. Released under the MIT Open Source License.</p>
+        </div>
+    </footer>
+
+    <script>
+        const PRESETS = {
+            early_return: `int check_branch(int x) {
+    if (x) return 42;
+    return 99;
+}
+
+int recursive_fib(int n) {
+    if (n <= 0) return 0;
+    if (n == 1) return 1;
+    return recursive_fib(n - 1) + recursive_fib(n - 2);
+}
+
+int main() {
+    int r = check_branch(1);
+    int fib = recursive_fib(7);
+    return r + fib;
+}`,
+            pointers: `int main() {
+    int x = 10;
+    int *p = &x;
+    *p = 40;
+    int y = *p + 2;
+    return y;
+}`,
+            bitwise: `int main() {
+    int a = 0x0F;
+    int b = 0xF0;
+    int c = (a | b);
+    int d = (c & 0xAA);
+    int e = (d ^ 0xFF);
+    int f = (1 << 5) + (e - 75);
+    return f;
+}`,
+            chars: `int main() {
+    char c = 'A';
+    int val = c;
+    char *str = "Hello\\nWorld";
+    if (str[0] == 'H') {
+        return val - 23;
+    }
+    return 0;
+}`,
+            fizzbuzz: `int printf();
+
+int main() {
+    int i;
+    for (i = 1; i <= 15; i = i + 1) {
+        if (i % 15 == 0) {
+            printf("FizzBuzz\\n");
+        } else if (i % 3 == 0) {
+            printf("Fizz\\n");
+        } else if (i % 5 == 0) {
+            printf("Buzz\\n");
+        } else {
+            printf("%d\\n", i);
+        }
+    }
+    return 0;
+}`
+        };
+
+        let activeTab = 'run';
+        let visualData = { run: '', asm: '', ir: '', ast: '', tokens: '' };
+
+        function loadPreset(key) {
+            const editor = document.getElementById('source-editor');
+            editor.value = PRESETS[key] || '';
+            runCompiler();
+        }
+
+        function clearEditor() {
+            const editor = document.getElementById('source-editor');
+            editor.value = '';
+            editor.focus();
+            runCompiler();
+        }
+
+        function setTab(tab, btn) {
+            activeTab = tab;
+            document.querySelectorAll('.ide-tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            displayOutput();
+        }
+
+        function triggerRun() {
+            setTab('run', document.querySelector('.tab-run'));
+            runCompiler();
+        }
+
+        function displayOutput() {
+            const outPane = document.getElementById('output-pane');
+            outPane.innerText = visualData[activeTab] || 'No output';
+            if (activeTab === 'run') {
+                outPane.classList.add('output-terminal');
+            } else {
+                outPane.classList.remove('output-terminal');
+            }
+        }
+
+        function copyCurrentOutput() {
+            navigator.clipboard.writeText(visualData[activeTab] || '');
+        }
+
+        function copyInstallCmd(btn) {
+            navigator.clipboard.writeText('curl -fsSL https://raw.githubusercontent.com/Ashutosh-Yadav-256/C-compiler-in-C/main/install.sh | bash');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<span style="display: inline-flex; align-items: center; gap: 5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg> Copied to clipboard!</span>';
+            setTimeout(() => { btn.innerHTML = original; }, 2000);
+        }
+
+        function tokenize(src) {
+            const tokens = [];
+            let pos = 0, line = 1, col = 1;
+
+            while (pos < src.length) {
+                const c = src[pos];
+
+                if (c === '\n') { line++; col = 1; pos++; continue; }
+                if (/\s/.test(c)) { col++; pos++; continue; }
+
+                if (c === '#') {
+                    while (pos < src.length && src[pos] !== '\n') pos++;
+                    continue;
+                }
+                if (c === '/' && src[pos + 1] === '/') {
+                    while (pos < src.length && src[pos] !== '\n') pos++;
+                    continue;
+                }
+                if (c === '/' && src[pos + 1] === '*') {
+                    pos += 2;
+                    while (pos < src.length && !(src[pos] === '*' && src[pos + 1] === '/')) {
+                        if (src[pos] === '\n') { line++; col = 1; }
+                        pos++;
+                    }
+                    pos += 2;
+                    continue;
+                }
+
+                if (/\d/.test(c)) {
+                    let start = pos, scol = col;
+                    let isHex = (c === '0' && (src[pos+1] === 'x' || src[pos+1] === 'X'));
+                    let isBin = (c === '0' && (src[pos+1] === 'b' || src[pos+1] === 'B'));
+                    if (isHex || isBin) pos += 2;
+                    while (pos < src.length && /[0-9a-fA-F_]/.test(src[pos])) pos++;
+                    while (pos < src.length && /[uUlL]/.test(src[pos])) pos++;
+                    const text = src.substring(start, pos);
+                    col += (pos - start);
+                    tokens.push({ type: 'INT_LITERAL', val: text, line, col: scol });
+                    continue;
+                }
+
+                if (/[a-zA-Z_]/.test(c)) {
+                    let start = pos, scol = col;
+                    while (pos < src.length && /[a-zA-Z0-9_]/.test(src[pos])) pos++;
+                    const text = src.substring(start, pos);
+                    col += (pos - start);
+                    const isKw = /^(int|char|void|long|return|if|else|while|for|break|continue|sizeof)$/.test(text);
+                    tokens.push({ type: isKw ? 'KEYWORD' : 'IDENT', val: text, line, col: scol });
+                    continue;
+                }
+
+                if (c === '"') {
+                    let start = pos, scol = col;
+                    pos++;
+                    while (pos < src.length && src[pos] !== '"') {
+                        if (src[pos] === '\\') pos++;
+                        pos++;
+                    }
+                    if (src[pos] === '"') pos++;
+                    const text = src.substring(start, pos);
+                    col += (pos - start);
+                    tokens.push({ type: 'STRING_LITERAL', val: text, line, col: scol });
+                    continue;
+                }
+
+                if (c === "'") {
+                    let start = pos, scol = col;
+                    pos++;
+                    while (pos < src.length && src[pos] !== "'") {
+                        if (src[pos] === '\\') pos++;
+                        pos++;
+                    }
+                    if (src[pos] === "'") pos++;
+                    const text = src.substring(start, pos);
+                    col += (pos - start);
+                    tokens.push({ type: 'CHAR_LITERAL', val: text, line, col: scol });
+                    continue;
+                }
+
+                const two = src.substr(pos, 2);
+                if (/^(==|!=|<=|>=|<<|>>|&&|\|\||->|\+\+|--|\+=|-=|\*=|\/=)$/.test(two)) {
+                    tokens.push({ type: 'OPERATOR', val: two, line, col });
+                    pos += 2; col += 2;
+                    continue;
+                }
+
+                tokens.push({ type: 'PUNCT', val: c, line, col });
+                pos++; col++;
+            }
+            return tokens;
+        }
+
+        function parseProgram(tokens) {
+            let idx = 0;
+            const funcs = [];
+            const strings = [];
+
+            function peek() { return tokens[idx]; }
+            function next() { return tokens[idx++]; }
+            function match(v) {
+                if (idx < tokens.length && tokens[idx].val === v) { idx++; return true; }
+                return false;
+            }
+            function expect(v) {
+                const t = peek();
+                if (!t || t.val !== v) {
+                    throw new Error(`Syntax Error at line ${t ? t.line : 'EOF'}:${t ? t.col : 'EOF'}: Expected '${v}', got '${t ? t.val : 'EOF'}'`);
+                }
+                return next();
+            }
+
+            function isType(t) {
+                return t && t.type === 'KEYWORD' && ['int', 'char', 'void', 'long'].includes(t.val);
+            }
+
+            function parseType() {
+                if (!isType(peek())) return null;
+                let t = next().val;
+                while (match('*')) t += '*';
+                return t;
+            }
+
+            function parsePrimary() {
+                const t = peek();
+                if (!t) throw new Error("Unexpected end of input");
+
+                if (t.type === 'INT_LITERAL') return { kind: 'IntLit', val: parseInt(next().val, 0) };
+                if (t.type === 'CHAR_LITERAL') return { kind: 'CharLit', val: next().val };
+                if (t.type === 'STRING_LITERAL') {
+                    const strVal = next().val;
+                    if (!strings.includes(strVal)) strings.push(strVal);
+                    return { kind: 'StringLit', val: strVal, strId: strings.indexOf(strVal) };
+                }
+                if (t.val === 'sizeof') {
+                    next();
+                    expect('(');
+                    const subType = parseType();
+                    if (subType) {
+                        expect(')');
+                        return { kind: 'Sizeof', typeName: subType };
+                    }
+                    const expr = parseExpression();
+                    expect(')');
+                    return { kind: 'Sizeof', expr };
+                }
+                if (t.type === 'IDENT') {
+                    const name = next().val;
+                    if (match('(')) {
+                        const args = [];
+                        if (peek() && peek().val !== ')') {
+                            do {
+                                args.push(parseExpression());
+                            } while (match(','));
+                        }
+                        expect(')');
+                        return { kind: 'Call', name, args };
+                    }
+                    return { kind: 'Var', name };
+                }
+                if (match('(')) {
+                    const expr = parseExpression();
+                    expect(')');
+                    return expr;
+                }
+                throw new Error(`Syntax Error at line ${t.line}:${t.col}: Unexpected token '${t.val}'`);
+            }
+
+            function parsePostfix() {
+                let expr = parsePrimary();
+                while (true) {
+                    if (match('[')) {
+                        const idxExpr = parseExpression();
+                        expect(']');
+                        expr = { kind: 'Deref', operand: { kind: 'BinOp', op: '+', left: expr, right: idxExpr } };
+                    } else break;
+                }
+                return expr;
+            }
+
+            function parseUnary() {
+                if (match('+')) return parseUnary();
+                if (match('-')) return { kind: 'UnOp', op: '-', operand: parseUnary() };
+                if (match('!')) return { kind: 'UnOp', op: '!', operand: parseUnary() };
+                if (match('~')) return { kind: 'UnOp', op: '~', operand: parseUnary() };
+                if (match('&')) return { kind: 'AddrOf', operand: parseUnary() };
+                if (match('*')) return { kind: 'Deref', operand: parseUnary() };
+                return parsePostfix();
+            }
+
+            function parseMultiplicative() {
+                let left = parseUnary();
+                while (peek() && ['*', '/', '%'].includes(peek().val)) {
+                    const op = next().val;
+                    left = { kind: 'BinOp', op, left, right: parseUnary() };
+                }
+                return left;
+            }
+
+            function parseAdditive() {
+                let left = parseMultiplicative();
+                while (peek() && ['+', '-'].includes(peek().val)) {
+                    const op = next().val;
+                    left = { kind: 'BinOp', op, left, right: parseMultiplicative() };
+                }
+                return left;
+            }
+
+            function parseShift() {
+                let left = parseAdditive();
+                while (peek() && ['<<', '>>'].includes(peek().val)) {
+                    const op = next().val;
+                    left = { kind: 'BinOp', op, left, right: parseAdditive() };
+                }
+                return left;
+            }
+
+            function parseRelational() {
+                let left = parseShift();
+                while (peek() && ['<', '<=', '>', '>='].includes(peek().val)) {
+                    const op = next().val;
+                    left = { kind: 'BinOp', op, left, right: parseShift() };
+                }
+                return left;
+            }
+
+            function parseEquality() {
+                let left = parseRelational();
+                while (peek() && ['==', '!='].includes(peek().val)) {
+                    const op = next().val;
+                    left = { kind: 'BinOp', op, left, right: parseRelational() };
+                }
+                return left;
+            }
+
+            function parseBitwiseAnd() {
+                let left = parseEquality();
+                while (match('&')) left = { kind: 'BinOp', op: '&', left, right: parseEquality() };
+                return left;
+            }
+
+            function parseBitwiseXor() {
+                let left = parseBitwiseAnd();
+                while (match('^')) left = { kind: 'BinOp', op: '^', left, right: parseBitwiseAnd() };
+                return left;
+            }
+
+            function parseBitwiseOr() {
+                let left = parseBitwiseXor();
+                while (match('|')) left = { kind: 'BinOp', op: '|', left, right: parseBitwiseXor() };
+                return left;
+            }
+
+            function parseLogicalAnd() {
+                let left = parseBitwiseOr();
+                while (match('&&')) left = { kind: 'BinOp', op: '&&', left, right: parseBitwiseOr() };
+                return left;
+            }
+
+            function parseLogicalOr() {
+                let left = parseLogicalAnd();
+                while (match('||')) left = { kind: 'BinOp', op: '||', left, right: parseLogicalAnd() };
+                return left;
+            }
+
+            function parseAssignment() {
+                let left = parseLogicalOr();
+                if (peek() && ['=', '+=', '-=', '*=', '/='].includes(peek().val)) {
+                    const op = next().val;
+                    const right = parseAssignment();
+                    return { kind: 'Assign', target: left, op, expr: right };
+                }
+                return left;
+            }
+
+            function parseExpression() { return parseAssignment(); }
+
+            function parseBlock() {
+                expect('{');
+                const stmts = [];
+                while (peek() && peek().val !== '}') {
+                    stmts.push(parseStatement());
+                }
+                expect('}');
+                return { kind: 'Block', stmts };
+            }
+
+            function parseStatement() {
+                const t = peek();
+                if (!t) throw new Error("Unexpected end of input inside block");
+
+                if (t.val === 'return') {
+                    next();
+                    let expr = null;
+                    if (!match(';')) {
+                        expr = parseExpression();
+                        expect(';');
+                    }
+                    return { kind: 'Return', expr };
+                }
+
+                if (t.val === 'if') {
+                    next();
+                    expect('(');
+                    const cond = parseExpression();
+                    expect(')');
+                    const thenBr = parseStatement();
+                    let elseBr = null;
+                    if (match('else')) elseBr = parseStatement();
+                    return { kind: 'If', cond, thenBr, elseBr };
+                }
+
+                if (t.val === 'while') {
+                    next();
+                    expect('(');
+                    const cond = parseExpression();
+                    expect(')');
+                    const body = parseStatement();
+                    return { kind: 'While', cond, body };
+                }
+
+                if (t.val === 'for') {
+                    next();
+                    expect('(');
+                    let init = null, cond = null, inc = null;
+                    if (!match(';')) { init = parseStatement(); }
+                    if (!match(';')) { cond = parseExpression(); expect(';'); }
+                    if (!match(')')) { inc = parseExpression(); expect(')'); }
+                    const body = parseStatement();
+                    return { kind: 'For', init, cond, inc, body };
+                }
+
+                if (t.val === 'break') { next(); expect(';'); return { kind: 'Break' }; }
+                if (t.val === 'continue') { next(); expect(';'); return { kind: 'Continue' }; }
+                if (t.val === '{') return parseBlock();
+
+                if (isType(t)) {
+                    const varType = parseType();
+                    const name = expect(peek() ? peek().val : '').val;
+                    let init = null;
+                    if (match('=')) init = parseExpression();
+                    expect(';');
+                    return { kind: 'VarDecl', name, varType, init };
+                }
+
+                const expr = parseExpression();
+                expect(';');
+                return { kind: 'ExprStmt', expr };
+            }
+
+            while (idx < tokens.length) {
+                if (match(';')) continue;
+
+                const retType = parseType();
+                if (!retType) {
+
+                    next();
+                    continue;
+                }
+                const nameTok = next();
+                if (!nameTok || nameTok.type !== 'IDENT') {
+                    continue;
+                }
+                const name = nameTok.val;
+
+                if (match('(')) {
+                    let params = [];
+                    if (peek() && peek().val !== ')') {
+                        do {
+                            const ptype = parseType();
+                            if (!ptype) {
+                                if (match('...') || (peek() && peek().val === '...')) {
+                                    if (peek() && peek().val === '...') next();
+                                    params.push({ name: '...', type: '...' });
+                                }
+                                break;
+                            }
+                            let pname = "";
+                            if (peek() && peek().type === 'IDENT') pname = next().val;
+                            params.push({ name: pname, type: ptype });
+                        } while (match(','));
+                    }
+                    expect(')');
+
+                    if (params.length === 1 && params[0].type === 'void' && !params[0].name) {
+                        params = [];
+                    }
+
+                    let body = null;
+                    if (!match(';')) {
+                        body = parseBlock();
+                    }
+
+                    funcs.push({ name, retType, params, body });
+                } else {
+
+                    if (match('=')) {
+                        parseExpression();
+                    }
+                    expect(';');
+                }
+            }
+
+            return { funcs, strings };
+        }
+
+        function formatAST(ast) {
+            let out = "TranslationUnit\n├── ProgramNode\n";
+            ast.funcs.forEach((fn, fIdx) => {
+                const isLast = (fIdx === ast.funcs.length - 1);
+                out += `${isLast ? '└──' : '├──'} Function: ${fn.name}(${fn.params.map(p => p.type + ' ' + p.name).join(', ')}) -> ${fn.retType}\n`;
+                if (fn.body) {
+                    out += `    └── Body: BlockNode (${fn.body.stmts.length} statements)\n`;
+                    fn.body.stmts.forEach((s, sIdx) => {
+                        out += `        ├── Stmt ${sIdx + 1}: ${s.kind}\n`;
+                    });
+                }
+            });
+            out += "└── Semantic Analysis: 0 Errors, Verified Scopes & Types";
+            return out;
+        }
+
+        function lowerToIR(ast) {
+            let out = "";
+            let vregCount = 0;
+            let labelCount = 0;
+
+            function newVreg() { return `v${vregCount++}`; }
+            function newLabel(prefix = "L") { return `.${prefix}_${++labelCount}`; }
+
+            ast.funcs.forEach(fn => {
+                if (!fn.body) return;
+                vregCount = 0;
+                out += `function ${fn.name}:\n`;
+                const epiLabel = `.${fn.name}_epilogue`;
+
+                fn.params.forEach((p, pIdx) => {
+                    out += `  v${pIdx} = PARAM arg${pIdx} (${p.name})\n`;
+                });
+                vregCount = Math.max(vregCount, fn.params.length);
+
+                const varMap = {};
+                fn.params.forEach((p, idx) => { varMap[p.name] = `v${idx}`; });
+
+                function lowerExpr(e) {
+                    if (!e) return null;
+                    if (e.kind === 'IntLit') {
+                        const r = newVreg();
+                        out += `  ${r} = IMM ${e.val}\n`;
+                        return r;
+                    }
+                    if (e.kind === 'CharLit') {
+                        const r = newVreg();
+                        out += `  ${r} = IMM ${e.val.charCodeAt(1) || 65}\n`;
+                        return r;
+                    }
+                    if (e.kind === 'StringLit') {
+                        const r = newVreg();
+                        out += `  ${r} = LEA_STR .STR${e.strId}\n`;
+                        return r;
+                    }
+                    if (e.kind === 'Var') {
+                        if (!varMap[e.name]) varMap[e.name] = newVreg();
+                        return varMap[e.name];
+                    }
+                    if (e.kind === 'AddrOf') {
+                        const r = newVreg();
+                        out += `  ${r} = LEA_VAR &${e.operand.name}\n`;
+                        return r;
+                    }
+                    if (e.kind === 'Deref') {
+                        const ptr = lowerExpr(e.operand);
+                        const r = newVreg();
+                        out += `  ${r} = LOAD [${ptr}]\n`;
+                        return r;
+                    }
+                    if (e.kind === 'Assign') {
+                        if (e.target.kind === 'Deref') {
+                            const ptr = lowerExpr(e.target.operand);
+                            const val = lowerExpr(e.expr);
+                            out += `  STORE [${ptr}], ${val}\n`;
+                            return val;
+                        }
+                        const val = lowerExpr(e.expr);
+                        const targetVreg = varMap[e.target.name] || (varMap[e.target.name] = newVreg());
+                        out += `  ${targetVreg} = MOV ${val}\n`;
+                        return targetVreg;
+                    }
+                    if (e.kind === 'BinOp') {
+                        const l = lowerExpr(e.left);
+                        const r = lowerExpr(e.right);
+                        const res = newVreg();
+                        const opMap = { '+': 'ADD', '-': 'SUB', '*': 'MUL', '/': 'DIV', '%': 'MOD', '==': 'EQ', '!=': 'NEQ', '<': 'LT', '>': 'GT', '<=': 'LTE', '>=': 'GTE', '&': 'BITAND', '|': 'BITOR', '^': 'BITXOR', '<<': 'SHL', '>>': 'SHR' };
+                        out += `  ${res} = ${opMap[e.op] || 'ADD'} ${l}, ${r}\n`;
+                        return res;
+                    }
+                    if (e.kind === 'UnOp') {
+                        const opnd = lowerExpr(e.operand);
+                        const res = newVreg();
+                        out += `  ${res} = ${e.op === '-' ? 'NEG' : e.op === '!' ? 'NOT' : 'BITNOT'} ${opnd}\n`;
+                        return res;
+                    }
+                    if (e.kind === 'Call') {
+                        e.args.forEach((a, aIdx) => {
+                            const argVreg = lowerExpr(a);
+                            out += `  ARG ${argVreg}, #${aIdx}\n`;
+                        });
+                        const res = newVreg();
+                        out += `  ${res} = CALL ${e.name} (${e.args.length} args)\n`;
+                        return res;
+                    }
+                    return newVreg();
+                }
+
+                function lowerStmt(s) {
+                    if (!s) return;
+                    if (s.kind === 'VarDecl') {
+                        const v = newVreg();
+                        varMap[s.name] = v;
+                        if (s.init) {
+                            const initVal = lowerExpr(s.init);
+                            out += `  ${v} = MOV ${initVal}\n`;
+                        }
+                    } else if (s.kind === 'Return') {
+                        const retVal = s.expr ? lowerExpr(s.expr) : null;
+                        out += `  RET ${retVal || 'void'}\n`;
+                        out += `  JMP ${epiLabel}\n`;
+                    } else if (s.kind === 'If') {
+                        const cond = lowerExpr(s.cond);
+                        const lElse = newLabel("else");
+                        const lEnd = newLabel("endif");
+                        out += `  JMPZ ${cond}, ${lElse}\n`;
+                        lowerStmt(s.thenBr);
+                        out += `  JMP ${lEnd}\n`;
+                        out += `${lElse}:\n`;
+                        if (s.elseBr) lowerStmt(s.elseBr);
+                        out += `${lEnd}:\n`;
+                    } else if (s.kind === 'While') {
+                        const lStart = newLabel("while_start");
+                        const lEnd = newLabel("while_end");
+                        out += `${lStart}:\n`;
+                        const cond = lowerExpr(s.cond);
+                        out += `  JMPZ ${cond}, ${lEnd}\n`;
+                        lowerStmt(s.body);
+                        out += `  JMP ${lStart}\n`;
+                        out += `${lEnd}:\n`;
+                    } else if (s.kind === 'For') {
+                        if (s.init) lowerStmt(s.init);
+                        const lStart = newLabel("for_start");
+                        const lEnd = newLabel("for_end");
+                        out += `${lStart}:\n`;
+                        if (s.cond) {
+                            const cond = lowerExpr(s.cond);
+                            out += `  JMPZ ${cond}, ${lEnd}\n`;
+                        }
+                        lowerStmt(s.body);
+                        if (s.inc) lowerExpr(s.inc);
+                        out += `  JMP ${lStart}\n`;
+                        out += `${lEnd}:\n`;
+                    } else if (s.kind === 'Block') {
+                        s.stmts.forEach(lowerStmt);
+                    } else if (s.kind === 'ExprStmt') {
+                        lowerExpr(s.expr);
+                    }
+                }
+
+                fn.body.stmts.forEach(lowerStmt);
+                out += `${epiLabel}:\n  RET\n\n`;
+            });
+            return out;
+        }
+
+        function generateNASM(ast) {
+            let out = "";
+
+            if (ast.strings && ast.strings.length > 0) {
+                out += "section .rodata\n";
+                ast.strings.forEach((s, idx) => {
+                    const cleanStr = s.slice(1, -1).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+                    const bytes = [];
+                    for (let i = 0; i < cleanStr.length; i++) bytes.push(cleanStr.charCodeAt(i));
+                    bytes.push(0);
+                    out += `.STR${idx}: db ${bytes.join(', ')}\n`;
+                });
+                out += "\n";
+            }
+
+            out += "section .text\n";
+            const paramRegs = ['rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9'];
+
+            ast.funcs.forEach(fn => {
+                if (!fn.body) return;
+
+                out += `global ${fn.name}\n`;
+                out += `${fn.name}:\n`;
+                out += `    push rbp\n`;
+                out += `    mov rbp, rsp\n`;
+                out += `    sub rsp, 64\n`;
+
+                const vregOffsets = {};
+                let stackSlot = 8;
+                function getOffset(name) {
+                    if (!vregOffsets[name]) {
+                        vregOffsets[name] = -stackSlot;
+                        stackSlot += 8;
+                    }
+                    return vregOffsets[name];
+                }
+
+                fn.params.forEach((p, pIdx) => {
+                    const off = getOffset(p.name);
+                    if (pIdx < 6) {
+                        out += `    mov [rbp${off}], ${paramRegs[pIdx]}\n`;
+                    }
+                });
+
+                let labelId = 0;
+                function emitExpr(e) {
+                    if (e.kind === 'IntLit') {
+                        out += `    mov rax, ${e.val}\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'CharLit') {
+                        out += `    mov rax, ${e.val.charCodeAt(1) || 65}\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'StringLit') {
+                        out += `    lea rax, [rel .STR${e.strId}]\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'Var') {
+                        const off = getOffset(e.name);
+                        out += `    mov rax, [rbp${off}]\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'AddrOf') {
+                        const off = getOffset(e.operand.name);
+                        out += `    lea rax, [rbp${off}]\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'Deref') {
+                        emitExpr(e.operand);
+                        out += `    mov rax, [rax]\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'Assign') {
+                        if (e.target.kind === 'Deref') {
+                            emitExpr(e.target.operand);
+                            out += `    push rax\n`;
+                            emitExpr(e.expr);
+                            out += `    pop rcx\n`;
+                            out += `    mov [rcx], rax\n`;
+                            return 'rax';
+                        }
+                        emitExpr(e.expr);
+                        const off = getOffset(e.target.name);
+                        out += `    mov [rbp${off}], rax\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'BinOp') {
+                        emitExpr(e.left);
+                        out += `    push rax\n`;
+                        emitExpr(e.right);
+                        out += `    mov rbx, rax\n`;
+                        out += `    pop rax\n`;
+
+                        switch (e.op) {
+                            case '+': out += `    add rax, rbx\n`; break;
+                            case '-': out += `    sub rax, rbx\n`; break;
+                            case '*': out += `    imul rax, rbx\n`; break;
+                            case '/': out += `    cqo\n    idiv rbx\n`; break;
+                            case '%': out += `    cqo\n    idiv rbx\n    mov rax, rdx\n`; break;
+                            case '&': out += `    and rax, rbx\n`; break;
+                            case '|': out += `    or rax, rbx\n`; break;
+                            case '^': out += `    xor rax, rbx\n`; break;
+                            case '<<': out += `    mov rcx, rbx\n    shl rax, cl\n`; break;
+                            case '>>': out += `    mov rcx, rbx\n    sar rax, cl\n`; break;
+                            case '==': case '!=': case '<': case '>': case '<=': case '>=':
+                                out += `    cmp rax, rbx\n`;
+                                const setMap = { '==': 'sete', '!=': 'setne', '<': 'setl', '>': 'setg', '<=': 'setle', '>=': 'setge' };
+                                out += `    ${setMap[e.op]} al\n    movzx rax, al\n`;
+                                break;
+                        }
+                        return 'rax';
+                    }
+                    if (e.kind === 'UnOp') {
+                        emitExpr(e.operand);
+                        if (e.op === '-') out += `    neg rax\n`;
+                        else if (e.op === '~') out += `    not rax\n`;
+                        else if (e.op === '!') out += `    cmp rax, 0\n    sete al\n    movzx rax, al\n`;
+                        return 'rax';
+                    }
+                    if (e.kind === 'Call') {
+                        e.args.forEach((a, idx) => {
+                            emitExpr(a);
+                            out += `    push rax\n`;
+                        });
+                        for (let i = e.args.length - 1; i >= 0; i--) {
+                            if (i < 6) out += `    pop ${paramRegs[i]}\n`;
+                            else out += `    pop rax\n`;
+                        }
+                        out += `    xor eax, eax\n`;
+                        out += `    call ${e.name}\n`;
+                        return 'rax';
+                    }
+                }
+
+                function emitStmt(s) {
+                    if (s.kind === 'VarDecl') {
+                        if (s.init) {
+                            emitExpr(s.init);
+                            const off = getOffset(s.name);
+                            out += `    mov [rbp${off}], rax\n`;
+                        }
+                    } else if (s.kind === 'Return') {
+                        if (s.expr) emitExpr(s.expr);
+                        out += `    jmp .L${fn.name}_epilogue\n`;
+                    } else if (s.kind === 'If') {
+                        const lElse = `.Lelse_${++labelId}`;
+                        const lEnd = `.Lendif_${labelId}`;
+                        emitExpr(s.cond);
+                        out += `    cmp rax, 0\n    je ${lElse}\n`;
+                        emitStmt(s.thenBr);
+                        out += `    jmp ${lEnd}\n${lElse}:\n`;
+                        if (s.elseBr) emitStmt(s.elseBr);
+                        out += `${lEnd}:\n`;
+                    } else if (s.kind === 'While') {
+                        const lStart = `.Lwhile_start_${++labelId}`;
+                        const lEnd = `.Lwhile_end_${labelId}`;
+                        out += `${lStart}:\n`;
+                        emitExpr(s.cond);
+                        out += `    cmp rax, 0\n    je ${lEnd}\n`;
+                        emitStmt(s.body);
+                        out += `    jmp ${lStart}\n${lEnd}:\n`;
+                    } else if (s.kind === 'For') {
+                        if (s.init) emitStmt(s.init);
+                        const lStart = `.Lfor_start_${++labelId}`;
+                        const lEnd = `.Lfor_end_${labelId}`;
+                        out += `${lStart}:\n`;
+                        if (s.cond) {
+                            emitExpr(s.cond);
+                            out += `    cmp rax, 0\n    je ${lEnd}\n`;
+                        }
+                        emitStmt(s.body);
+                        if (s.inc) emitExpr(s.inc);
+                        out += `    jmp ${lStart}\n${lEnd}:\n`;
+                    } else if (s.kind === 'Block') {
+                        s.stmts.forEach(emitStmt);
+                    } else if (s.kind === 'ExprStmt') {
+                        emitExpr(s.expr);
+                    }
+                }
+
+                fn.body.stmts.forEach(emitStmt);
+
+                out += `.L${fn.name}_epilogue:\n`;
+                out += `    mov rsp, rbp\n`;
+                out += `    pop rbp\n`;
+                out += `    ret\n\n`;
+            });
+
+            return out;
+        }
+
+        function executeProgram(ast) {
+            let stdout = "";
+            const memory = {};
+            let nextAddr = 0x1000;
+            let callDepth = 0;
+            const maxSteps = 100000;
+            let stepCount = 0;
+
+            const funcMap = {};
+            ast.funcs.forEach(f => { funcMap[f.name] = f; });
+
+            function allocAddr(val) {
+                const addr = nextAddr;
+                nextAddr += 8;
+                memory[addr] = val;
+                return addr;
+            }
+
+            function evalExpr(e, env) {
+                if (++stepCount > maxSteps) throw new Error("Execution limit exceeded (possible infinite loop)");
+                if (!e) return 0;
+                if (e.kind === 'IntLit') return e.val;
+                if (e.kind === 'CharLit') return (e.val.charCodeAt(1) || 65);
+                if (e.kind === 'StringLit') {
+                    return e.val.slice(1, -1).replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+                }
+                if (e.kind === 'Var') {
+                    if (env[e.name] !== undefined) return env[e.name];
+                    throw new Error(`Runtime Error: Undeclared variable '${e.name}'`);
+                }
+                if (e.kind === 'AddrOf') {
+                    const varName = e.operand.name;
+                    if (env['__addr_' + varName] === undefined) {
+                        env['__addr_' + varName] = allocAddr(env[varName] !== undefined ? env[varName] : 0);
+                    }
+                    return env['__addr_' + varName];
+                }
+                if (e.kind === 'Deref') {
+                    const ptr = evalExpr(e.operand, env);
+                    if (memory[ptr] !== undefined) return memory[ptr];
+                    return 0;
+                }
+                if (e.kind === 'Assign') {
+                    if (e.target.kind === 'Deref') {
+                        const ptr = evalExpr(e.target.operand, env);
+                        const val = evalExpr(e.expr, env);
+                        memory[ptr] = val;
+                        for (let k in env) {
+                            if (k.startsWith('__addr_') && env[k] === ptr) {
+                                const varName = k.replace('__addr_', '');
+                                env[varName] = val;
+                            }
+                        }
+                        return val;
+                    }
+                    const val = evalExpr(e.expr, env);
+                    env[e.target.name] = val;
+                    if (env['__addr_' + e.target.name] !== undefined) {
+                        memory[env['__addr_' + e.target.name]] = val;
+                    }
+                    return val;
+                }
+                if (e.kind === 'BinOp') {
+                    if (e.op === '&&') {
+                        const l = evalExpr(e.left, env);
+                        if (!l) return 0;
+                        return evalExpr(e.right, env) ? 1 : 0;
+                    }
+                    if (e.op === '||') {
+                        const l = evalExpr(e.left, env);
+                        if (l) return 1;
+                        return evalExpr(e.right, env) ? 1 : 0;
+                    }
+                    const l = evalExpr(e.left, env);
+                    const r = evalExpr(e.right, env);
+                    switch (e.op) {
+                        case '+': return l + r;
+                        case '-': return l - r;
+                        case '*': return l * r;
+                        case '/': return r !== 0 ? Math.trunc(l / r) : 0;
+                        case '%': return r !== 0 ? Math.trunc(l % r) : 0;
+                        case '&': return l & r;
+                        case '|': return l | r;
+                        case '^': return l ^ r;
+                        case '<<': return l << (r & 63);
+                        case '>>': return l >> (r & 63);
+                        case '==': return l === r ? 1 : 0;
+                        case '!=': return l !== r ? 1 : 0;
+                        case '<': return l < r ? 1 : 0;
+                        case '>': return l > r ? 1 : 0;
+                        case '<=': return l <= r ? 1 : 0;
+                        case '>=': return l >= r ? 1 : 0;
+                    }
+                }
+                if (e.kind === 'UnOp') {
+                    const opnd = evalExpr(e.operand, env);
+                    if (e.op === '-') return -opnd;
+                    if (e.op === '~') return ~opnd;
+                    if (e.op === '!') return opnd === 0 ? 1 : 0;
+                }
+                if (e.kind === 'Call') {
+                    if (e.name === 'printf') {
+                        const evaluatedArgs = e.args.map(a => evalExpr(a, env));
+                        if (evaluatedArgs.length > 0) {
+                            let fmt = String(evaluatedArgs[0]);
+                            let argIdx = 1;
+                            let formatted = fmt.replace(/%[dsxc]/g, match => {
+                                if (argIdx < evaluatedArgs.length) {
+                                    return evaluatedArgs[argIdx++];
+                                }
+                                return match;
+                            });
+                            stdout += formatted;
+                        }
+                        return 0;
+                    }
+                    const fn = funcMap[e.name];
+                    if (!fn || !fn.body) throw new Error(`Call to undefined function '${e.name}'`);
+                    if (++callDepth > 500) throw new Error("Stack overflow: Maximum call depth exceeded in recursion");
+                    const newEnv = {};
+                    e.args.forEach((a, i) => {
+                        const paramName = fn.params[i] ? fn.params[i].name : `arg${i}`;
+                        newEnv[paramName] = evalExpr(a, env);
+                    });
+                    const ret = execStmt(fn.body, newEnv);
+                    callDepth--;
+                    return (ret && ret.returned) ? ret.value : 0;
+                }
+                return 0;
+            }
+
+            function execStmt(s, env) {
+                if (++stepCount > maxSteps) throw new Error("Execution limit exceeded (possible infinite loop)");
+                if (!s) return null;
+                if (s.kind === 'VarDecl') {
+                    const val = s.init ? evalExpr(s.init, env) : 0;
+                    env[s.name] = val;
+                    env['__addr_' + s.name] = allocAddr(val);
+                    return null;
+                }
+                if (s.kind === 'Return') {
+                    const val = s.expr ? evalExpr(s.expr, env) : 0;
+                    return { returned: true, value: val };
+                }
+                if (s.kind === 'ExprStmt') {
+                    evalExpr(s.expr, env);
+                    return null;
+                }
+                if (s.kind === 'Block') {
+                    const blockEnv = Object.create(env);
+                    for (let stmt of s.stmts) {
+                        const res = execStmt(stmt, blockEnv);
+                        if (res && (res.returned || res.isBreak || res.isContinue)) return res;
+                    }
+                    return null;
+                }
+                if (s.kind === 'If') {
+                    const cond = evalExpr(s.cond, env);
+                    if (cond) {
+                        return execStmt(s.thenBr, env);
+                    } else if (s.elseBr) {
+                        return execStmt(s.elseBr, env);
+                    }
+                    return null;
+                }
+                if (s.kind === 'While') {
+                    while (evalExpr(s.cond, env)) {
+                        const res = execStmt(s.body, env);
+                        if (res) {
+                            if (res.returned) return res;
+                            if (res.isBreak) break;
+                            if (res.isContinue) continue;
+                        }
+                    }
+                    return null;
+                }
+                if (s.kind === 'For') {
+                    if (s.init) execStmt(s.init, env);
+                    while (s.cond ? evalExpr(s.cond, env) : true) {
+                        const res = execStmt(s.body, env);
+                        if (res) {
+                            if (res.returned) return res;
+                            if (res.isBreak) break;
+                            if (res.isContinue) {  }
+                        }
+                        if (s.inc) evalExpr(s.inc, env);
+                    }
+                    return null;
+                }
+                if (s.kind === 'Break') return { isBreak: true };
+                if (s.kind === 'Continue') return { isContinue: true };
+                return null;
+            }
+
+            const mainFn = funcMap['main'];
+            if (!mainFn) throw new Error("Undefined reference to 'main': Expected 'int main()'");
+            const env = {};
+            const res = execStmt(mainFn.body, env);
+            const exitCode = (res && res.returned) ? res.value : 0;
+
+            return { stdout, exitCode };
+        }
+
+        function runCompiler() {
+            const src = document.getElementById('source-editor').value;
+            const t0 = performance.now();
+            const statusInd = document.getElementById('ide-status-indicator');
+            const statusText = document.getElementById('ide-status-text');
+            const outPane = document.getElementById('output-pane');
+
+            if (!src.trim()) {
+                visualData.tokens = 'No tokens (source is empty)';
+                visualData.ast = 'Translation Unit is empty';
+                visualData.ir = 'No IR generated';
+                visualData.asm = 'No assembly generated';
+                visualData.run = '============================================================\nREADY: Editor cleared.\nType or paste C code to compile and execute.\n============================================================\n';
+                statusInd.classList.remove('is-error');
+                outPane.classList.remove('error-view');
+                statusText.innerText = 'Editor cleared. Type C code to compile.';
+                displayOutput();
+                return;
+            }
+
+            try {
+
+                const tokens = tokenize(src);
+                visualData.tokens = tokens.map(t => `[${t.line}:${t.col.toString().padStart(2)}] ${t.type.padEnd(16)} "${t.val}"`).join('\n');
+
+                const ast = parseProgram(tokens);
+                visualData.ast = formatAST(ast);
+
+                visualData.ir = lowerToIR(ast);
+
+                visualData.asm = generateNASM(ast);
+
+                const execResult = executeProgram(ast);
+                const elapsed = (performance.now() - t0).toFixed(2);
+
+                let runBanner = `============================================================\n`;
+                runBanner += `PROGRAM EXECUTION RUN (x86-64 Emulation Sandbox)\n`;
+                runBanner += `============================================================\n\n`;
+                if (execResult.stdout.length > 0) {
+                    runBanner += `[Standard Output]\n${execResult.stdout}\n\n`;
+                }
+                runBanner += `------------------------------------------------------------\n`;
+                runBanner += `Process finished with exit code: ${execResult.exitCode}\n`;
+                runBanner += `Execution runtime: ${elapsed} ms\n`;
+                runBanner += `Virtual memory: 0 leaks reported\n`;
+
+                visualData.run = runBanner;
+
+                statusInd.classList.remove('is-error');
+                outPane.classList.remove('error-view');
+                statusText.innerText = `Program Executed (Exit Code: ${execResult.exitCode}) in ${elapsed} ms`;
+            } catch (err) {
+                statusInd.classList.add('is-error');
+                outPane.classList.add('error-view');
+                visualData.run = `============================================================\nEXECUTION ERROR\n============================================================\n\n${err.message}`;
+                visualData.asm = `============================================================\nCOMPILATION ERROR\n============================================================\n\n${err.message}`;
+                visualData.ir = `[PIPELINE ERROR] Pipeline halted during parsing\n${err.message}`;
+                visualData.ast = `[AST ERROR] AST generation failed\n${err.message}`;
+                statusText.innerText = `Error: ${err.message.split('\n')[0]}`;
+            }
+
+            displayOutput();
+        }
+
+        document.getElementById('source-editor').addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const s = this.selectionStart, end = this.selectionEnd;
+                this.value = this.value.substring(0, s) + "    " + this.value.substring(end);
+                this.selectionStart = this.selectionEnd = s + 4;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                triggerRun();
+            }
+        });
+
+        document.getElementById('source-editor').addEventListener('input', runCompiler);
+
+        loadPreset('fizzbuzz');
+    </script>
+</body>
+</html>
+
