@@ -598,10 +598,6 @@
             background: var(--error);
             box-shadow: 0 0 6px rgba(158, 59, 59, 0.4);
         }
-
-        /* -------------------------------------------------------------
-           Dedicated Fullscreen IDE Mode
-        ------------------------------------------------------------- */
         body.has-fullscreen-ide {
             overflow: hidden !important;
         }
@@ -998,10 +994,6 @@
                 transform: translateY(0);
             }
         }
-
-        /* -------------------------------------------------------------
-           Why This Exists / Motivation Section
-        ------------------------------------------------------------- */
         .why-section {
             max-width: 1200px;
             margin: 0 auto 6rem;
@@ -1112,10 +1104,6 @@
             line-height: 1.6;
             text-align: left;
         }
-
-        /* -------------------------------------------------------------
-           Try These Examples Toolbar - Glassmorphism UI
-        ------------------------------------------------------------- */
         .examples-toolbar-container {
             margin-bottom: 1.25rem;
             background: rgba(255, 255, 255, 0.48);
@@ -1180,8 +1168,6 @@
             gap: 0.55rem;
             align-items: center;
         }
-
-        /* Unified Chip Styling across all categories */
         .example-chip {
             background: rgba(255, 255, 255, 0.55);
             backdrop-filter: blur(10px) saturate(160%);
@@ -1276,10 +1262,6 @@
             color: #FFFFFF !important;
             border-color: rgba(255, 255, 255, 0.4);
         }
-
-        /* -------------------------------------------------------------
-           Diagnostics Showcase Section
-        ------------------------------------------------------------- */
         .diagnostics-section {
             max-width: 1200px;
             margin: 0 auto 6rem;
@@ -1388,10 +1370,6 @@
             border-color: var(--accent);
             color: #FFFFFF;
         }
-
-        /* -------------------------------------------------------------
-           Comprehensive Mobile & Tablet Responsive Media Queries
-        ------------------------------------------------------------- */
         @media (max-width: 960px) {
             .hero h1 {
                 font-size: 2.8rem;
@@ -1651,8 +1629,6 @@
                 padding: 0.65rem 1rem;
                 font-size: 0.75rem;
             }
-
-            /* Dedicated Mobile Fullscreen Playground Styles */
             .ide-window.is-fullscreen {
                 position: fixed !important;
                 top: 0 !important;
@@ -2530,8 +2506,6 @@ int main() {
             const picker = document.getElementById('example-picker');
             editor.value = PRESETS[key] || '';
             if (picker) picker.value = key;
-
-            // Sync active visual state on chips
             document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
             if (btn) {
                 btn.classList.add('active');
@@ -3235,8 +3209,6 @@ int main() {
 
             function newVreg() { return `v${vregCount++}`; }
             function newLabel(prefix = "L") { return `.${prefix}_${++labelCount}`; }
-
-            // Pass 1: Raw Unoptimized TAC IR
             ast.funcs.forEach(fn => {
                 if (!fn.body) return;
                 vregCount = 0;
@@ -3383,8 +3355,6 @@ int main() {
                 fn.body.stmts.forEach(lowerStmt);
                 rawIR += `${epiLabel}:\n  RET\n\n`;
             });
-
-            // Pass 2: Flow-Safe Local Value Numbering & Constant Folding IR
             ast.funcs.forEach(fn => {
                 if (!fn.body) return;
                 optIR += `function ${fn.name}:\n`;
@@ -3982,8 +3952,6 @@ int main() {
                 triggerRun();
             }
         });
-
-        // Mobile Navigation Toggle
         const mobileToggle = document.getElementById('mobile-toggle');
         const navLinks = document.getElementById('nav-links');
         if (mobileToggle && navLinks) {
@@ -3992,16 +3960,12 @@ int main() {
                 const isOpen = navLinks.classList.toggle('open');
                 mobileToggle.classList.toggle('active', isOpen);
             });
-
-            // Close mobile menu on clicking any navigation item
             navLinks.querySelectorAll('a').forEach(function(link) {
                 link.addEventListener('click', function() {
                     navLinks.classList.remove('open');
                     mobileToggle.classList.remove('active');
                 });
             });
-
-            // Close when clicking outside
             document.addEventListener('click', function(e) {
                 if (!navLinks.contains(e.target) && !mobileToggle.contains(e.target)) {
                     navLinks.classList.remove('open');
@@ -4009,8 +3973,6 @@ int main() {
                 }
             });
         }
-
-        // Fullscreen Controller for Dedicated Playground / Compiler
         function updateFullscreenUI(isFullscreen) {
             const ideWindow = document.querySelector('.ide-window');
             const toggleBtn = document.getElementById('fullscreen-toggle');
@@ -4045,24 +4007,18 @@ int main() {
                 Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
 
             if (!isCurrentlyFullscreen) {
-                // Activate visual CSS fullscreen
                 updateFullscreenUI(true);
-
-                // Attempt native HTML5 browser fullscreen ONLY on desktop screens (> 960px)
                 if (window.innerWidth > 960) {
                     try {
                         const req = ideWindow.requestFullscreen || ideWindow.webkitRequestFullscreen || ideWindow.mozRequestFullScreen || ideWindow.msRequestFullscreen;
                         if (req) {
                             req.call(ideWindow).catch(function() {
-                                /* Fallback to CSS fullscreen if native request denied */
                             });
                         }
                     } catch (e) {
-                        /* Fallback to CSS fullscreen */
                     }
                 }
             } else {
-                // Exit native browser fullscreen if active
                 try {
                     if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
                         const exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
@@ -4071,13 +4027,9 @@ int main() {
                         }
                     }
                 } catch (e) {}
-
-                // Deactivate visual CSS fullscreen
                 updateFullscreenUI(false);
             }
         }
-
-        // Keep UI in sync if user exits native fullscreen via hardware key / browser UI
         ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(function(evName) {
             document.addEventListener(evName, function() {
                 const isNative = Boolean(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
@@ -4087,8 +4039,6 @@ int main() {
                 }
             });
         });
-
-        // Support Escape key to exit fullscreen
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' || e.key === 'Esc') {
                 const ideWindow = document.querySelector('.ide-window');
