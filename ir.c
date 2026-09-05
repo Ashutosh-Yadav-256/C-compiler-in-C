@@ -19,16 +19,20 @@ static int new_vreg(ir_builder_t *b) {
 }
 
 static void emit(ir_builder_t *b, ir_instr_t instr) {
+    if (!b || !b->func) return;
     if (b->func->instr_count == b->func->instr_capacity) {
         size_t new_cap = b->func->instr_capacity == 0 ? 32 : b->func->instr_capacity * 2;
         ir_instr_t *new_instrs = arena_alloc(b->arena, new_cap * sizeof(ir_instr_t));
+        if (!new_instrs) return;
         if (b->func->instrs) {
             memcpy(new_instrs, b->func->instrs, b->func->instr_count * sizeof(ir_instr_t));
         }
         b->func->instrs = new_instrs;
         b->func->instr_capacity = new_cap;
     }
-    b->func->instrs[b->func->instr_count++] = instr;
+    if (b->func->instrs) {
+        b->func->instrs[b->func->instr_count++] = instr;
+    }
 }
 
 static int build_expr(ir_builder_t *b, ast_node_t *expr) {
@@ -61,22 +65,25 @@ static int build_expr(ir_builder_t *b, ast_node_t *expr) {
             }
         }
         if (str_id == -1) {
-            str_id = b->prog->string_count;
+            str_id = (int)b->prog->string_count;
             if (b->prog->string_count == b->prog->string_capacity) {
                 size_t new_cap = b->prog->string_capacity == 0 ? 8 : b->prog->string_capacity * 2;
                 ir_string_t *new_strings = arena_alloc(b->arena, new_cap * sizeof(ir_string_t));
+                if (!new_strings) return -1;
                 if (b->prog->strings) {
                     memcpy(new_strings, b->prog->strings, b->prog->string_count * sizeof(ir_string_t));
                 }
                 b->prog->strings = new_strings;
                 b->prog->string_capacity = new_cap;
             }
-            b->prog->strings[b->prog->string_count].id = str_id;
-            b->prog->strings[b->prog->string_count].val = expr->string_literal.val;
-            b->prog->strings[b->prog->string_count].len = expr->string_literal.len;
-            b->prog->strings[b->prog->string_count].decoded = dec;
-            b->prog->strings[b->prog->string_count].decoded_len = dec_len;
-            b->prog->string_count++;
+            if (b->prog->strings) {
+                b->prog->strings[b->prog->string_count].id = str_id;
+                b->prog->strings[b->prog->string_count].val = expr->string_literal.val;
+                b->prog->strings[b->prog->string_count].len = expr->string_literal.len;
+                b->prog->strings[b->prog->string_count].decoded = dec;
+                b->prog->strings[b->prog->string_count].decoded_len = dec_len;
+                b->prog->string_count++;
+            }
         }
 
         int res = new_vreg(b);
@@ -385,20 +392,26 @@ static void build_stmt(ir_builder_t *b, ast_node_t *stmt) {
 }
 
 ir_program_t *ir_build(ast_node_t *prog_ast, arena_t *arena) {
-    if (!prog_ast || prog_ast->kind != AST_PROGRAM) return NULL;
+    if (!prog_ast || prog_ast->kind != AST_PROGRAM || !prog_ast->program.funcs) return NULL;
 
     ir_program_t *prog = arena_alloc(arena, sizeof(ir_program_t));
+    if (!prog) return NULL;
     prog->func_count = prog_ast->program.func_count;
     prog->funcs = arena_alloc(arena, prog->func_count * sizeof(ir_func_t *));
+    if (!prog->funcs && prog->func_count > 0) return NULL;
+    if (prog->funcs) {
+        memset(prog->funcs, 0, prog->func_count * sizeof(ir_func_t *));
+    }
     prog->strings = NULL;
     prog->string_count = 0;
     prog->string_capacity = 0;
 
     for (size_t i = 0; i < prog->func_count; i++) {
         ast_node_t *func_ast = prog_ast->program.funcs[i];
-        if (func_ast->function.body == NULL) continue;
+        if (!func_ast || func_ast->function.body == NULL) continue;
 
         ir_func_t *func = arena_alloc(arena, sizeof(ir_func_t));
+        if (!func) return NULL;
         func->name = func_ast->function.name;
         func->name_len = func_ast->function.name_len;
         func->instrs = NULL;
@@ -419,8 +432,10 @@ ir_program_t *ir_build(ast_node_t *prog_ast, arena_t *arena) {
         func->epilogue_label = new_label(&b);
 
         for (size_t j = 0; j < func->param_count; j++) {
-            ir_instr_t instr = { .op = IR_PARAM, .dest = func_ast->function.params[j]->var_decl.symbol_id, .imm = (long long)j };
-            emit(&b, instr);
+            if (func_ast->function.params && func_ast->function.params[j]) {
+                ir_instr_t instr = { .op = IR_PARAM, .dest = func_ast->function.params[j]->var_decl.symbol_id, .imm = (long long)j };
+                emit(&b, instr);
+            }
         }
 
         build_stmt(&b, func_ast->function.body);

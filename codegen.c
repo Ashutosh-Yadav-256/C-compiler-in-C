@@ -1,4 +1,7 @@
 #include "codegen.h"
+#include <limits.h>
+
+#define MAX_PENDING_ARGS 256
 
 static int vreg_offset(int vreg) {
     return -8 * (vreg + 1);
@@ -7,9 +10,9 @@ static int vreg_offset(int vreg) {
 static const char *param_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
 
 int cgen_emit_x86_64(FILE *out, ir_program_t *prog) {
-    if (!prog) return 1;
+    if (!out || !prog) return 1;
 
-    if (prog->string_count > 0) {
+    if (prog->string_count > 0 && prog->strings) {
         fprintf(out, "section .rodata\n");
         for (size_t i = 0; i < prog->string_count; i++) {
             fprintf(out, ".STR%d: db ", prog->strings[i].id);
@@ -22,9 +25,11 @@ int cgen_emit_x86_64(FILE *out, ir_program_t *prog) {
         }
     }
 
+    if (!prog->funcs) return 0;
+
     for (size_t f_idx = 0; f_idx < prog->func_count; f_idx++) {
         ir_func_t *func = prog->funcs[f_idx];
-        if (!func) continue;
+        if (!func || !func->name) continue;
 
         fprintf(out, "global %.*s\n", (int)func->name_len, func->name);
         fprintf(out, "section .text\n");
@@ -32,33 +37,39 @@ int cgen_emit_x86_64(FILE *out, ir_program_t *prog) {
         fprintf(out, "    push rbp\n");
         fprintf(out, "    mov rbp, rsp\n");
 
-        int stack_size = func->vreg_count * 8;
+        long long raw_stack_size = (long long)func->vreg_count * 8LL;
+        if (raw_stack_size < 0 || raw_stack_size > INT_MAX - 16) {
+            raw_stack_size = 0;
+        }
+        int stack_size = (int)raw_stack_size;
         stack_size = (stack_size + 15) & ~15;
         if (stack_size > 0) {
             fprintf(out, "    sub rsp, %d\n", stack_size);
         }
 
-        int pending_args[64];
+        int pending_args[MAX_PENDING_ARGS] = {0};
 
         for (size_t i = 0; i < func->instr_count; i++) {
             ir_instr_t *ins = &func->instrs[i];
             switch (ins->op) {
                 case IR_PARAM:
-                    if (ins->imm < 6) {
+                    if (ins->imm >= 0 && ins->imm < 6) {
                         fprintf(out, "    mov [rbp%+d], %s\n", vreg_offset(ins->dest), param_regs[ins->imm]);
-                    } else {
+                    } else if (ins->imm >= 6) {
                         int param_offset = 16 + (int)(ins->imm - 6) * 8;
                         fprintf(out, "    mov rax, [rbp+%d]\n", param_offset);
                         fprintf(out, "    mov [rbp%+d], rax\n", vreg_offset(ins->dest));
                     }
                     break;
                 case IR_ARG:
-                    if (ins->imm < 64) {
+                    if (ins->imm >= 0 && ins->imm < MAX_PENDING_ARGS) {
                         pending_args[ins->imm] = ins->src1;
                     }
                     break;
                 case IR_CALL: {
                     int arg_count = (int)ins->imm;
+                    if (arg_count < 0) arg_count = 0;
+                    if (arg_count > MAX_PENDING_ARGS) arg_count = MAX_PENDING_ARGS;
                     int stack_args = arg_count > 6 ? arg_count - 6 : 0;
                     int stack_padding = (stack_args % 2 != 0) ? 8 : 0;
 
@@ -67,15 +78,21 @@ int cgen_emit_x86_64(FILE *out, ir_program_t *prog) {
                     }
 
                     for (int j = arg_count - 1; j >= 6; j--) {
-                        fprintf(out, "    push qword [rbp%+d]\n", vreg_offset(pending_args[j]));
+                        if (j < MAX_PENDING_ARGS) {
+                            fprintf(out, "    push qword [rbp%+d]\n", vreg_offset(pending_args[j]));
+                        }
                     }
 
                     for (int j = 0; j < arg_count && j < 6; j++) {
-                        fprintf(out, "    mov %s, [rbp%+d]\n", param_regs[j], vreg_offset(pending_args[j]));
+                        if (j < MAX_PENDING_ARGS) {
+                            fprintf(out, "    mov %s, [rbp%+d]\n", param_regs[j], vreg_offset(pending_args[j]));
+                        }
                     }
 
                     fprintf(out, "    xor eax, eax\n");
-                    fprintf(out, "    call %.*s\n", (int)ins->name_len, ins->name);
+                    if (ins->name) {
+                        fprintf(out, "    call %.*s\n", (int)ins->name_len, ins->name);
+                    }
 
                     int bytes_to_remove = stack_args * 8 + stack_padding;
                     if (bytes_to_remove > 0) {

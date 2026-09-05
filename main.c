@@ -8,7 +8,11 @@
 #include "ir.h"
 #include "opt.h"
 
+#define MAX_SOURCE_SIZE (64 * 1024 * 1024)
+
 static char *read_file(const char *path) {
+    if (!path) return NULL;
+
     FILE *file = fopen(path, "rb");
     if (!file) {
         fprintf(stderr, "Could not open file \"%s\".\n", path);
@@ -24,6 +28,11 @@ static char *read_file(const char *path) {
     long tell_size = ftell(file);
     if (tell_size < 0) {
         fprintf(stderr, "Error reading file size for \"%s\".\n", path);
+        fclose(file);
+        return NULL;
+    }
+    if ((size_t)tell_size > MAX_SOURCE_SIZE) {
+        fprintf(stderr, "File \"%s\" exceeds maximum supported source size (64MB).\n", path);
         fclose(file);
         return NULL;
     }

@@ -24,6 +24,7 @@ for test_file in tests/*.c; do
         chars_strings) expected=42 ;;
         bitwise) expected=42 ;;
         const_branch_safety) expected=42 ;;
+        security_edge_cases) expected=42 ;;
         *) expected=0 ;;
     esac
     

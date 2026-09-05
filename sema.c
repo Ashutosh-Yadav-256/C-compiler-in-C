@@ -40,8 +40,9 @@ typedef struct {
 } sema_context_t;
 
 static int find_var_all(sema_context_t *ctx, const char *name, size_t name_len) {
+    if (!name) return -1;
     for (int i = ctx->var_count - 1; i >= 0; i--) {
-        if (ctx->vars[i].name_len == name_len &&
+        if (ctx->vars[i].name && ctx->vars[i].name_len == name_len &&
             strncmp(ctx->vars[i].name, name, name_len) == 0) {
             return i;
         }
@@ -50,9 +51,10 @@ static int find_var_all(sema_context_t *ctx, const char *name, size_t name_len) 
 }
 
 static int find_var_current_scope(sema_context_t *ctx, const char *name, size_t name_len) {
+    if (!name) return -1;
     for (int i = ctx->var_count - 1; i >= 0; i--) {
         if (ctx->vars[i].scope_depth < ctx->scope_depth) break;
-        if (ctx->vars[i].name_len == name_len &&
+        if (ctx->vars[i].name && ctx->vars[i].name_len == name_len &&
             strncmp(ctx->vars[i].name, name, name_len) == 0) {
             return i;
         }
@@ -61,8 +63,9 @@ static int find_var_current_scope(sema_context_t *ctx, const char *name, size_t 
 }
 
 static func_sym_t *find_func(sema_context_t *ctx, const char *name, size_t name_len) {
+    if (!name) return -1;
     for (int i = 0; i < ctx->func_count; i++) {
-        if (ctx->funcs[i].name_len == name_len &&
+        if (ctx->funcs[i].name && ctx->funcs[i].name_len == name_len &&
             strncmp(ctx->funcs[i].name, name, name_len) == 0) {
             return &ctx->funcs[i];
         }
@@ -75,33 +78,36 @@ static void check_node(sema_context_t *ctx, ast_node_t *node) {
 
     switch (node->kind) {
         case AST_PROGRAM: {
-            for (size_t i = 0; i < node->program.func_count; i++) {
-                ast_node_t *f = node->program.funcs[i];
-                func_sym_t *existing = find_func(ctx, f->function.name, f->function.name_len);
-                if (existing) {
-                    if (existing->is_defined && f->function.body != NULL) {
-                        fprintf(stderr, "Error at %d:%d: Redefinition of function '%.*s'\n",
-                                f->line, f->col, (int)f->function.name_len, f->function.name);
-                        ctx->error_count++;
+            if (node->program.funcs) {
+                for (size_t i = 0; i < node->program.func_count; i++) {
+                    ast_node_t *f = node->program.funcs[i];
+                    if (!f) continue;
+                    func_sym_t *existing = find_func(ctx, f->function.name, f->function.name_len);
+                    if (existing) {
+                        if (existing->is_defined && f->function.body != NULL) {
+                            fprintf(stderr, "Error at %d:%d: Redefinition of function '%.*s'\n",
+                                    f->line, f->col, (int)f->function.name_len, f->function.name ? f->function.name : "");
+                            ctx->error_count++;
+                        }
+                    } else {
+                        if (ctx->func_count >= MAX_FUNCS) {
+                            fprintf(stderr, "Error at %d:%d: Too many functions\n", f->line, f->col);
+                            ctx->error_count++;
+                            break;
+                        }
+                        func_sym_t *fn = &ctx->funcs[ctx->func_count++];
+                        fn->name = f->function.name;
+                        fn->name_len = f->function.name_len;
+                        fn->ret_type = f->function.ret_type ? f->function.ret_type : get_type_int();
+                        fn->param_count = f->function.param_count;
+                        fn->is_varargs = f->function.is_varargs;
+                        fn->is_defined = (f->function.body != NULL);
                     }
-                } else {
-                    if (ctx->func_count >= MAX_FUNCS) {
-                        fprintf(stderr, "Error at %d:%d: Too many functions\n", f->line, f->col);
-                        ctx->error_count++;
-                        break;
-                    }
-                    func_sym_t *fn = &ctx->funcs[ctx->func_count++];
-                    fn->name = f->function.name;
-                    fn->name_len = f->function.name_len;
-                    fn->ret_type = f->function.ret_type ? f->function.ret_type : get_type_int();
-                    fn->param_count = f->function.param_count;
-                    fn->is_varargs = f->function.is_varargs;
-                    fn->is_defined = (f->function.body != NULL);
                 }
-            }
-            for (size_t i = 0; i < node->program.func_count; i++) {
-                if (node->program.funcs[i]->function.body != NULL) {
-                    check_node(ctx, node->program.funcs[i]);
+                for (size_t i = 0; i < node->program.func_count; i++) {
+                    if (node->program.funcs[i] && node->program.funcs[i]->function.body != NULL) {
+                        check_node(ctx, node->program.funcs[i]);
+                    }
                 }
             }
             break;
@@ -114,7 +120,9 @@ static void check_node(sema_context_t *ctx, ast_node_t *node) {
             ctx->current_func_ret_type = node->function.ret_type ? node->function.ret_type : get_type_int();
 
             for (size_t i = 0; i < node->function.param_count; i++) {
+                if (!node->function.params) break;
                 ast_node_t *param = node->function.params[i];
+                if (!param) continue;
                 if (param->var_decl.name && find_var_current_scope(ctx, param->var_decl.name, param->var_decl.name_len) != -1) {
                     fprintf(stderr, "Error at %d:%d: Duplicate parameter '%.*s'\n",
                             param->line, param->col, (int)param->var_decl.name_len, param->var_decl.name);
@@ -140,10 +148,17 @@ static void check_node(sema_context_t *ctx, ast_node_t *node) {
             break;
         }
         case AST_BLOCK: {
+            if (ctx->scope_depth >= MAX_SCOPES) {
+                fprintf(stderr, "Error at %d:%d: Exceeded maximum scope nesting depth\n", node->line, node->col);
+                ctx->error_count++;
+                return;
+            }
             ctx->scope_depth++;
             int old_count = ctx->var_count;
-            for (size_t i = 0; i < node->block.stmt_count; i++) {
-                check_node(ctx, node->block.stmts[i]);
+            if (node->block.stmts) {
+                for (size_t i = 0; i < node->block.stmt_count; i++) {
+                    check_node(ctx, node->block.stmts[i]);
+                }
             }
             ctx->var_count = old_count;
             ctx->scope_depth--;

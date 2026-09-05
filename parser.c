@@ -26,7 +26,24 @@ void parser_init(parser_t *p, lexer_t *l, arena_t *arena) {
     p->lexer = l;
     p->arena = arena;
     p->error_count = 0;
+    p->recursion_depth = 0;
     p->current = lex_next(p->lexer);
+}
+
+static int enter_depth(parser_t *p) {
+    if (p->recursion_depth >= MAX_PARSER_DEPTH) {
+        fprintf(stderr, "Syntax error at %d:%d: Exceeded maximum nesting recursion depth\n", p->current.line, p->current.col);
+        p->error_count++;
+        return 0;
+    }
+    p->recursion_depth++;
+    return 1;
+}
+
+static void leave_depth(parser_t *p) {
+    if (p->recursion_depth > 0) {
+        p->recursion_depth--;
+    }
 }
 
 static void advance(parser_t *p) {
@@ -71,12 +88,15 @@ static type_t *parse_type(parser_t *p) {
 
 static ast_node_t *create_node(parser_t *p, ast_node_kind_t kind, int line, int col) {
     ast_node_t *node = arena_alloc(p->arena, sizeof(ast_node_t));
-    if (node) {
-        memset(node, 0, sizeof(ast_node_t));
-        node->kind = kind;
-        node->line = line;
-        node->col = col;
+    if (!node) {
+        fprintf(stderr, "Fatal error at %d:%d: Out of memory\n", line, col);
+        p->error_count++;
+        return NULL;
     }
+    memset(node, 0, sizeof(ast_node_t));
+    node->kind = kind;
+    node->line = line;
+    node->col = col;
     return node;
 }
 
@@ -89,6 +109,7 @@ static ast_node_t *parse_primary(parser_t *p) {
 
     if (p->current.kind == TOK_INT_LITERAL) {
         ast_node_t *node = create_node(p, AST_INT_LITERAL, line, col);
+        if (!node) return NULL;
         node->int_literal.value = p->current.int_val;
         node->type = get_type_int();
         advance(p);
@@ -97,6 +118,7 @@ static ast_node_t *parse_primary(parser_t *p) {
 
     if (p->current.kind == TOK_CHAR_LITERAL) {
         ast_node_t *node = create_node(p, AST_CHAR_LITERAL, line, col);
+        if (!node) return NULL;
         node->char_literal.value = p->current.char_val;
         node->type = get_type_char();
         advance(p);
@@ -105,7 +127,9 @@ static ast_node_t *parse_primary(parser_t *p) {
 
     if (p->current.kind == TOK_STRING) {
         ast_node_t *node = create_node(p, AST_STRING_LITERAL, line, col);
+        if (!node) return NULL;
         char *decoded = arena_alloc(p->arena, p->current.length + 1);
+        if (!decoded) return NULL;
         size_t dec_len = lex_decode_escape_string(decoded, p->current.start, p->current.length);
         decoded[dec_len] = '\0';
 
@@ -121,6 +145,7 @@ static ast_node_t *parse_primary(parser_t *p) {
     if (p->current.kind == TOK_SIZEOF_KW) {
         advance(p);
         ast_node_t *node = create_node(p, AST_SIZEOF, line, col);
+        if (!node) return NULL;
         node->type = get_type_int();
         if (p->current.kind == TOK_LPAREN) {
             advance(p);
@@ -490,8 +515,13 @@ static ast_node_t *parse_assignment(parser_t *p) {
     return left;
 }
 
+static ast_node_t *parse_statement_body(parser_t *p);
+
 static ast_node_t *parse_expression(parser_t *p) {
-    return parse_assignment(p);
+    if (!enter_depth(p)) return NULL;
+    ast_node_t *res = parse_assignment(p);
+    leave_depth(p);
+    return res;
 }
 
 static ast_node_t *parse_block(parser_t *p) {
@@ -509,6 +539,7 @@ static ast_node_t *parse_block(parser_t *p) {
         if (count == capacity) {
             capacity = capacity == 0 ? 8 : capacity * 2;
             ast_node_t **new_stmts = arena_alloc(p->arena, capacity * sizeof(ast_node_t *));
+            if (!new_stmts) return NULL;
             if (stmts) {
                 memcpy(new_stmts, stmts, count * sizeof(ast_node_t *));
             }
@@ -520,12 +551,20 @@ static ast_node_t *parse_block(parser_t *p) {
     if (!expect(p, TOK_RBRACE)) return NULL;
 
     ast_node_t *node = create_node(p, AST_BLOCK, line, col);
+    if (!node) return NULL;
     node->block.stmts = stmts;
     node->block.stmt_count = count;
     return node;
 }
 
 static ast_node_t *parse_statement(parser_t *p) {
+    if (!enter_depth(p)) return NULL;
+    ast_node_t *res = parse_statement_body(p);
+    leave_depth(p);
+    return res;
+}
+
+static ast_node_t *parse_statement_body(parser_t *p) {
     int line = p->current.line, col = p->current.col;
     if (p->current.kind == TOK_RETURN_KW) {
         advance(p);
@@ -537,6 +576,7 @@ static ast_node_t *parse_statement(parser_t *p) {
         if (!expect(p, TOK_SEMI)) return NULL;
 
         ast_node_t *node = create_node(p, AST_RETURN, line, col);
+        if (!node) return NULL;
         node->return_stmt.expr = expr;
         return node;
     }
@@ -562,6 +602,7 @@ static ast_node_t *parse_statement(parser_t *p) {
         if (!expect(p, TOK_SEMI)) return NULL;
 
         ast_node_t *node = create_node(p, AST_VAR_DECL, line, col);
+        if (!node) return NULL;
         node->var_decl.name = name_tok.start;
         node->var_decl.name_len = name_tok.length;
         node->var_decl.type_spec = var_type;
@@ -577,6 +618,7 @@ static ast_node_t *parse_statement(parser_t *p) {
     if (p->current.kind == TOK_SEMI) {
         advance(p);
         ast_node_t *node = create_node(p, AST_BLOCK, line, col);
+        if (!node) return NULL;
         node->block.stmts = NULL;
         node->block.stmt_count = 0;
         return node;
@@ -596,6 +638,7 @@ static ast_node_t *parse_statement(parser_t *p) {
             if (!else_branch) return NULL;
         }
         ast_node_t *node = create_node(p, AST_IF, line, col);
+        if (!node) return NULL;
         node->if_stmt.condition = cond;
         node->if_stmt.then_branch = then_branch;
         node->if_stmt.else_branch = else_branch;
@@ -611,6 +654,7 @@ static ast_node_t *parse_statement(parser_t *p) {
         ast_node_t *body = parse_statement(p);
         if (!body) return NULL;
         ast_node_t *node = create_node(p, AST_WHILE, line, col);
+        if (!node) return NULL;
         node->while_stmt.condition = cond;
         node->while_stmt.body = body;
         return node;
@@ -646,6 +690,7 @@ static ast_node_t *parse_statement(parser_t *p) {
         if (!body) return NULL;
 
         ast_node_t *node = create_node(p, AST_FOR, line, col);
+        if (!node) return NULL;
         node->for_stmt.init = init;
         node->for_stmt.condition = cond;
         node->for_stmt.inc = inc;
@@ -704,6 +749,7 @@ static ast_node_t *parse_function(parser_t *p) {
             }
 
             ast_node_t *param = create_node(p, AST_VAR_DECL, p_line, p_col);
+            if (!param) return NULL;
             param->var_decl.name = param_tok.start;
             param->var_decl.name_len = param_tok.length;
             param->var_decl.type_spec = param_type;
@@ -713,6 +759,7 @@ static ast_node_t *parse_function(parser_t *p) {
             if (count == capacity) {
                 capacity = capacity == 0 ? 4 : capacity * 2;
                 ast_node_t **new_params = arena_alloc(p->arena, capacity * sizeof(ast_node_t *));
+                if (!new_params) return NULL;
                 if (params) memcpy(new_params, params, count * sizeof(ast_node_t *));
                 params = new_params;
             }
@@ -724,7 +771,6 @@ static ast_node_t *parse_function(parser_t *p) {
 
     ast_node_t *body = NULL;
     if (match(p, TOK_SEMI)) {
-
         if (count == 0) is_varargs = 1;
     } else {
         body = parse_block(p);
@@ -732,6 +778,7 @@ static ast_node_t *parse_function(parser_t *p) {
     }
 
     ast_node_t *node = create_node(p, AST_FUNCTION, line, col);
+    if (!node) return NULL;
     node->function.name = name_tok.start;
     node->function.name_len = name_tok.length;
     node->function.ret_type = ret_type;
@@ -756,6 +803,7 @@ ast_node_t *parse_translation_unit(parser_t *p) {
         if (count == capacity) {
             capacity = capacity == 0 ? 4 : capacity * 2;
             ast_node_t **new_funcs = arena_alloc(p->arena, capacity * sizeof(ast_node_t *));
+            if (!new_funcs) return NULL;
             if (funcs) memcpy(new_funcs, funcs, count * sizeof(ast_node_t *));
             funcs = new_funcs;
         }
@@ -763,6 +811,7 @@ ast_node_t *parse_translation_unit(parser_t *p) {
     }
 
     ast_node_t *node = create_node(p, AST_PROGRAM, line, col);
+    if (!node) return NULL;
     node->program.funcs = funcs;
     node->program.func_count = count;
 

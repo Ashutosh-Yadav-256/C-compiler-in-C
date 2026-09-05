@@ -65,12 +65,26 @@ void opt_run_passes(ir_program_t *prog) {
                         long long res = 0;
                         bool valid = true;
 
+#include <limits.h>
+
                         switch (ins->op) {
-                            case IR_ADD: res = v1 + v2; break;
-                            case IR_SUB: res = v1 - v2; break;
-                            case IR_MUL: res = v1 * v2; break;
-                            case IR_DIV: if (v2 != 0) res = v1 / v2; else valid = false; break;
-                            case IR_MOD: if (v2 != 0) res = v1 % v2; else valid = false; break;
+                            case IR_ADD: res = (long long)((unsigned long long)v1 + (unsigned long long)v2); break;
+                            case IR_SUB: res = (long long)((unsigned long long)v1 - (unsigned long long)v2); break;
+                            case IR_MUL: res = (long long)((unsigned long long)v1 * (unsigned long long)v2); break;
+                            case IR_DIV:
+                                if (v2 != 0 && !(v1 == LLONG_MIN && v2 == -1)) {
+                                    res = v1 / v2;
+                                } else {
+                                    valid = false;
+                                }
+                                break;
+                            case IR_MOD:
+                                if (v2 != 0 && !(v1 == LLONG_MIN && v2 == -1)) {
+                                    res = v1 % v2;
+                                } else {
+                                    valid = false;
+                                }
+                                break;
                             case IR_EQ: res = (v1 == v2); break;
                             case IR_NEQ: res = (v1 != v2); break;
                             case IR_LT: res = (v1 < v2); break;
@@ -80,8 +94,8 @@ void opt_run_passes(ir_program_t *prog) {
                             case IR_BITAND: res = (v1 & v2); break;
                             case IR_BITOR: res = (v1 | v2); break;
                             case IR_BITXOR: res = (v1 ^ v2); break;
-                            case IR_SHL: res = (v1 << (v2 & 63)); break;
-                            case IR_SHR: res = (v1 >> (v2 & 63)); break;
+                            case IR_SHL: res = (long long)((unsigned long long)v1 << ((unsigned long long)v2 & 63)); break;
+                            case IR_SHR: res = (v1 >> ((unsigned long long)v2 & 63)); break;
                             default: valid = false; break;
                         }
 
@@ -102,13 +116,20 @@ void opt_run_passes(ir_program_t *prog) {
                     if (ins->src1 >= 0 && ins->src1 < func->vreg_count && is_const[ins->src1]) {
                         long long v1 = const_vals[ins->src1];
                         long long res = 0;
+                        bool valid = true;
                         switch (ins->op) {
-                            case IR_NEG: res = -v1; break;
+                            case IR_NEG:
+                                if (v1 != LLONG_MIN) {
+                                    res = -v1;
+                                } else {
+                                    valid = false;
+                                }
+                                break;
                             case IR_NOT: res = !v1; break;
                             case IR_BITNOT: res = ~v1; break;
-                            default: break;
+                            default: valid = false; break;
                         }
-                        if (ins->dest >= 0 && ins->dest < func->vreg_count) {
+                        if (valid && ins->dest >= 0 && ins->dest < func->vreg_count) {
                             is_const[ins->dest] = true;
                             const_vals[ins->dest] = res;
 

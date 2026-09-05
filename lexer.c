@@ -66,6 +66,7 @@ static int is_ident_part(unsigned char c) {
 }
 
 size_t lex_decode_escape_string(char *dest, const char *src, size_t src_len) {
+    if (!dest || !src) return 0;
     size_t out_len = 0;
     for (size_t i = 0; i < src_len; i++) {
         if (src[i] == '\\' && i + 1 < src_len) {
@@ -81,17 +82,18 @@ size_t lex_decode_escape_string(char *dest, const char *src, size_t src_len) {
                 case '"': dest[out_len++] = '"'; break;
                 case 'x':
                 case 'X': {
-                    int val = 0;
                     if (i + 1 < src_len && isxdigit((unsigned char)src[i + 1])) {
                         i++;
-                        val = isdigit((unsigned char)src[i]) ? src[i] - '0' : (tolower((unsigned char)src[i]) - 'a' + 10);
+                        int val = isdigit((unsigned char)src[i]) ? src[i] - '0' : (tolower((unsigned char)src[i]) - 'a' + 10);
                         if (i + 1 < src_len && isxdigit((unsigned char)src[i + 1])) {
                             i++;
                             int digit2 = isdigit((unsigned char)src[i]) ? src[i] - '0' : (tolower((unsigned char)src[i]) - 'a' + 10);
                             val = (val << 4) | digit2;
                         }
+                        dest[out_len++] = (char)val;
+                    } else {
+                        dest[out_len++] = esc;
                     }
-                    dest[out_len++] = (char)val;
                     break;
                 }
                 default: dest[out_len++] = esc; break;
@@ -226,15 +228,16 @@ token_t lex_next(lexer_t *l) {
 
     if (c == '"') {
         tok.kind = TOK_STRING;
-        tok.start = &l->source[l->pos + 1];
         advance(l);
+        tok.start = &l->source[l->pos];
+        const char *content_start = tok.start;
         while (peek(l) != '\0' && peek(l) != '"') {
             if (peek(l) == '\\' && peek_next(l) != '\0') {
                 advance(l);
             }
-            tok.length++;
             advance(l);
         }
+        tok.length = (size_t)(&l->source[l->pos] - content_start);
         if (peek(l) == '"') {
             advance(l);
         } else {

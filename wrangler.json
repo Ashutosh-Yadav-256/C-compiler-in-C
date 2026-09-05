@@ -1,0 +1,7 @@
+{
+  "name": "c-compiler-in-c",
+  "compatibility_date": "2024-09-04",
+  "assets": {
+    "directory": "./docs"
+  }
+}

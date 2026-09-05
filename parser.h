@@ -5,11 +5,14 @@
 #include "ast.h"
 #include "arena.h"
 
+#define MAX_PARSER_DEPTH 500
+
 typedef struct {
     lexer_t *lexer;
     arena_t *arena;
     token_t current;
     int error_count;
+    int recursion_depth;
 } parser_t;
 
 void parser_init(parser_t *p, lexer_t *l, arena_t *arena);

@@ -14,7 +14,10 @@ struct arena {
     size_t default_chunk_size;
 };
 
+#include <limits.h>
+
 static arena_chunk_t *create_chunk(size_t capacity) {
+    if (capacity > SIZE_MAX - sizeof(arena_chunk_t)) return NULL;
     arena_chunk_t *chunk = malloc(sizeof(arena_chunk_t) + capacity);
     if (!chunk) return NULL;
     chunk->next = NULL;
@@ -28,6 +31,11 @@ arena_t *arena_create(size_t initial_size) {
     if (!arena) return NULL;
 
     size_t default_size = initial_size > 0 ? initial_size : (64 * 1024);
+    if (default_size > SIZE_MAX - sizeof(arena_chunk_t)) {
+        free(arena);
+        return NULL;
+    }
+
     arena->head = create_chunk(default_size);
     if (!arena->head) {
         free(arena);
@@ -40,22 +48,27 @@ arena_t *arena_create(size_t initial_size) {
 }
 
 void *arena_alloc_aligned(arena_t *arena, size_t size, size_t align) {
-    if (!arena || size == 0) return NULL;
-    if (align == 0) align = 8;
+    if (!arena || !arena->current || size == 0) return NULL;
+    if (align == 0 || (align & (align - 1)) != 0) align = 8;
+    if (size > SIZE_MAX - align) return NULL;
 
     arena_chunk_t *chunk = arena->current;
     uint8_t *base = (uint8_t *)(chunk + 1);
     uintptr_t current_addr = (uintptr_t)(base + chunk->offset);
     size_t padding = (align - (current_addr % align)) % align;
 
-    if (chunk->offset + padding + size <= chunk->capacity) {
+    if (chunk->offset <= chunk->capacity &&
+        padding <= chunk->capacity - chunk->offset &&
+        size <= chunk->capacity - chunk->offset - padding) {
         chunk->offset += padding;
         void *ptr = base + chunk->offset;
         chunk->offset += size;
         return ptr;
     }
 
-    size_t new_cap = size + align > arena->default_chunk_size ? size + align : arena->default_chunk_size;
+    size_t new_cap = (size + align > arena->default_chunk_size) ? (size + align) : arena->default_chunk_size;
+    if (new_cap > SIZE_MAX - sizeof(arena_chunk_t)) return NULL;
+
     arena_chunk_t *new_chunk = create_chunk(new_cap);
     if (!new_chunk) return NULL;
 
