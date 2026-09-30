@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>C-Compiler — Native x86-64 C Compiler Written in Pure C</title>
     <meta name="description" content="A fast, robust native C compiler written in C targeting x86-64 NASM assembly with custom arena allocation, typed AST, three-address code IR, and System V ABI compliance.">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -101,19 +102,13 @@
             text-decoration: none;
         }
 
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--accent-gradient);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #FFFFFF;
-            font-family: var(--font-code);
-            font-weight: 700;
-            font-size: 1.2rem;
-            box-shadow: 0 4px 12px var(--accent-glow);
+        .logo-svg {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 2px 8px rgba(93, 58, 10, 0.12);
+            flex-shrink: 0;
+            display: block;
         }
 
         .brand-text {
@@ -1932,6 +1927,13 @@
 
     <nav>
         <a class="nav-brand" href="#">
+            <svg class="logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="32" height="32" aria-hidden="true">
+                <rect width="120" height="120" rx="24" fill="#FFF8EE"/>
+                <rect x="35" y="30" width="50" height="16" rx="4" fill="#5D3A0A"/>
+                <rect x="35" y="52" width="16" height="16" rx="4" fill="#5D3A0A"/>
+                <rect x="35" y="74" width="50" height="16" rx="4" fill="#5D3A0A"/>
+                <rect x="91" y="74" width="16" height="16" rx="4" fill="#CF7B00"/>
+            </svg>
             <span class="brand-text">C-Compiler</span>
         </a>
         <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle navigation menu">
