@@ -26,9 +26,29 @@
             --success: #2D6A4F;
             --success-glow: rgba(45, 106, 79, 0.2);
             --error: #9E3B3B;
+
             --text-main: #573002;
             --text-muted: #7A6248;
             --text-bright: #573002;
+            --text-inverse: #FFFFFF;
+            --text-accent: #B45309;
+            --text-success: #2D6A4F;
+            --text-error: #9E3B3B;
+
+            --text-2xs: 0.75rem;
+            --text-xs: 0.8125rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-lg: 1.125rem;
+            --text-xl: 1.25rem;
+            --text-2xl: 1.75rem;
+            --text-3xl: 2.5rem;
+
+            --radius-xs: 4px;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-full: 9999px;
+
             --font-display: 'Space Grotesk', -apple-system, sans-serif;
             --font-ui: 'Inter', -apple-system, sans-serif;
             --font-code: 'Fira Code', monospace;
@@ -207,9 +227,9 @@
             background: var(--accent-gradient);
             color: #FFFFFF;
             padding: 0.85rem 1.8rem;
-            border-radius: 10px;
+            border-radius: var(--radius-sm, 8px);
             font-weight: 700;
-            font-size: 1rem;
+            font-size: var(--text-base, 1rem);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -226,61 +246,81 @@
         }
 
         .btn-soft {
-            background: linear-gradient(145deg, #FAF8F5, #EDE7DA);
-            border: 1px solid #DFD7C7;
-            padding: 0.48rem 1.05rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            height: 36px;
+            padding: 0 0.85rem;
+            border-radius: var(--radius-sm, 8px);
+            font-size: var(--text-sm, 0.875rem);
             font-weight: 600;
             font-family: var(--font-ui);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            box-shadow:
-                3px 3px 7px rgba(195, 185, 170, 0.45),
-                -3px -3px 7px rgba(255, 255, 255, 0.95);
+            box-shadow: var(--shadow-sm);
             transition: all 0.2s ease;
             user-select: none;
         }
 
         .btn-soft:hover {
-            border-color: #D5CCBA;
-            box-shadow:
-                4px 4px 9px rgba(195, 185, 170, 0.55),
-                -4px -4px 9px rgba(255, 255, 255, 1);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
             transform: translateY(-1px);
         }
 
         .btn-soft:active {
-            box-shadow:
-                inset 2px 2px 4px rgba(195, 185, 170, 0.5),
-                inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+            box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.08);
             transform: translateY(0);
         }
 
         .btn-soft-clear {
-            color: #9E3B3B;
+            color: var(--text-error);
         }
 
         .btn-soft-clear:hover {
             color: #B91C1C;
+            background: #FDF2F2;
         }
 
         .btn-soft-run {
-            color: #2D6A4F;
+            color: var(--text-success);
+            font-weight: 700;
         }
 
         .btn-soft-run:hover {
             color: #1B4332;
+            background: #F0FDF4;
         }
 
         .btn-soft-recompile {
-            color: #B45309;
+            color: var(--text-accent);
         }
 
         .btn-soft-recompile:hover {
             color: #78350F;
+            background: #FFFBEB;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            height: 28px;
+            padding: 0 0.6rem;
+            border-radius: var(--radius-xs, 4px);
+            font-size: var(--text-2xs, 0.75rem);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-main);
+            border-color: var(--border-hover);
+            background: var(--bg-surface);
         }
 
         .btn-secondary {
@@ -288,9 +328,9 @@
             color: var(--text-bright);
             border: 1px solid var(--border-color);
             padding: 0.85rem 1.8rem;
-            border-radius: 10px;
+            border-radius: var(--radius-sm, 8px);
             font-weight: 600;
-            font-size: 1rem;
+            font-size: var(--text-base, 1rem);
             text-decoration: none;
             display: inline-flex;
             align-items: center;
@@ -406,13 +446,14 @@
 
         .ide-header {
             background: var(--bg-elevated);
-            padding: 0.8rem 1.25rem;
+            padding: 1rem 1.25rem;
+            min-height: 58px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border-color);
             flex-wrap: wrap;
-            gap: 0.75rem;
+            gap: 1rem;
         }
 
         .window-dots {
@@ -433,25 +474,30 @@
         .ide-controls {
             display: flex;
             align-items: center;
-            gap: 0.85rem;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
 
         .select-styled {
             background: var(--bg-surface);
             color: var(--text-bright);
             border: 1px solid var(--border-color);
-            padding: 0.45rem 1rem;
-            border-radius: 6px;
+            height: 36px;
+            padding: 0 0.85rem;
+            border-radius: var(--radius-sm, 8px);
             font-family: var(--font-ui);
-            font-size: 0.85rem;
+            font-size: var(--text-sm, 0.875rem);
             outline: none;
             cursor: pointer;
             box-shadow: var(--shadow-sm);
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            display: inline-flex;
+            align-items: center;
         }
 
         .select-styled:hover, .select-styled:focus {
             border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--border-glow);
         }
 
         .ide-body {
@@ -816,10 +862,12 @@
         .feature-box {
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 2rem;
+            border-radius: var(--radius-md, 14px);
+            padding: 2.25rem 2rem;
             box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .feature-box:hover {
@@ -829,30 +877,30 @@
         }
 
         .feature-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm, 8px);
             background: var(--bg-elevated);
             border: 1px solid #DFD7C7;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1.5rem;
         }
 
         .feature-title {
             font-family: var(--font-display);
-            font-size: 1.25rem;
+            font-size: var(--text-xl, 1.25rem);
             font-weight: 700;
             color: var(--text-bright);
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.65rem;
             letter-spacing: -0.01em;
         }
 
         .feature-text {
             color: var(--text-muted);
-            font-size: 0.92rem;
-            line-height: 1.6;
+            font-size: var(--text-base, 1rem);
+            line-height: 1.65;
         }
 
         .install-section {
@@ -1021,23 +1069,23 @@
         }
 
         .why-quote-card {
-            background: var(--bg-elevated);
-            border: 1px solid #DFD7C7;
-            border-left: 4px solid var(--accent);
-            border-radius: 12px;
-            padding: 1.5rem 1.75rem;
-            margin: 2rem 0 2.5rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md, 14px);
+            padding: 2rem 2.25rem;
+            margin: 2rem 0 2rem;
             display: flex;
             align-items: flex-start;
-            gap: 1.25rem;
+            gap: 1.5rem;
+            box-shadow: var(--shadow-sm);
         }
 
         .why-quote-icon {
             color: var(--accent);
-            background: var(--bg-surface);
-            padding: 0.6rem;
-            border-radius: 10px;
-            border: 1px solid #DFD7C7;
+            background: var(--bg-elevated);
+            padding: 0.75rem;
+            border-radius: var(--radius-sm, 8px);
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1046,15 +1094,15 @@
 
         .why-quote-content h3 {
             font-family: var(--font-display);
-            font-size: 1.2rem;
+            font-size: var(--text-xl, 1.25rem);
             font-weight: 700;
             color: var(--text-bright);
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.5rem;
         }
 
         .why-quote-content p {
             color: var(--text-main);
-            font-size: 0.98rem;
+            font-size: var(--text-base, 1rem);
             line-height: 1.65;
             text-align: left;
         }
@@ -1066,33 +1114,34 @@
         }
 
         .why-card {
-            background: var(--bg-base);
+            background: var(--bg-surface);
             border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 1.75rem 1.5rem;
+            border-radius: var(--radius-md, 14px);
+            padding: 2rem 1.75rem;
             transition: all 0.3s ease;
-        }
-
-        .why-card:hover {
-            border-color: #DFD7C7;
-            transform: translateY(-2px);
             box-shadow: var(--shadow-sm);
         }
 
+        .why-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
         .why-icon {
-            width: 42px;
-            height: 42px;
-            border-radius: 10px;
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm, 8px);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1rem;
+            margin-bottom: 1.25rem;
             border: 1px solid var(--border-color);
         }
 
         .why-card h4 {
             font-family: var(--font-display);
-            font-size: 1.15rem;
+            font-size: var(--text-lg, 1.125rem);
             font-weight: 700;
             color: var(--text-bright);
             margin-bottom: 0.5rem;
@@ -1140,11 +1189,11 @@
         }
 
         .examples-toolbar-title {
-            font-size: 0.84rem;
+            font-size: var(--text-sm, 0.875rem);
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: #573002;
+            text-transform: none;
+            letter-spacing: -0.01em;
+            color: var(--text-main);
             display: flex;
             align-items: center;
             gap: 7px;
@@ -1156,10 +1205,40 @@
             justify-content: center;
             width: 20px;
             height: 20px;
-            border-radius: 6px;
+            border-radius: var(--radius-xs, 4px);
             background: rgba(180, 83, 9, 0.1);
             color: var(--accent);
             border: 1px solid rgba(180, 83, 9, 0.18);
+        }
+
+        .examples-categories-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .example-cat-group {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            flex-wrap: wrap;
+        }
+
+        .example-cat-label {
+            font-size: var(--text-2xs, 0.75rem);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+            min-width: 145px;
+            flex-shrink: 0;
+        }
+
+        .example-cat-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
         }
 
         .examples-chips-wrapper {
@@ -1169,48 +1248,40 @@
             align-items: center;
         }
         .example-chip {
-            background: rgba(255, 255, 255, 0.55);
-            backdrop-filter: blur(10px) saturate(160%);
-            -webkit-backdrop-filter: blur(10px) saturate(160%);
-            border: 1px solid rgba(223, 215, 199, 0.7);
-            border-top: 1px solid rgba(255, 255, 255, 0.95);
-            padding: 0.44rem 0.9rem;
-            border-radius: 24px;
-            font-size: 0.82rem;
+            background: rgba(255, 255, 255, 0.75);
+            border: 1px solid var(--border-color);
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--radius-full, 9999px);
+            font-size: var(--text-xs, 0.8125rem);
             font-weight: 600;
-            color: #573002;
+            color: var(--text-main);
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 6px;
+            transition: all 0.2s ease;
             user-select: none;
-            box-shadow: 
-                0 2px 6px rgba(59, 48, 48, 0.04),
-                inset 0 1px 1px rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-sm);
         }
 
         .example-chip span {
-            color: #573002;
+            color: var(--text-main);
         }
 
         .example-chip .chip-icon {
             width: 13px;
             height: 13px;
             flex-shrink: 0;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            color: #573002;
+            transition: transform 0.2s ease;
+            color: var(--text-muted);
         }
 
         .example-chip:hover {
-            background: rgba(255, 255, 255, 0.92);
-            border-color: rgba(180, 83, 9, 0.4);
-            border-top-color: rgba(255, 255, 255, 1);
+            background: var(--bg-surface);
+            border-color: var(--accent);
             color: var(--accent-dark);
-            transform: translateY(-2px);
-            box-shadow: 
-                0 6px 18px rgba(180, 83, 9, 0.12),
-                inset 0 1px 1px rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
         }
 
         .example-chip:hover span {
@@ -1219,46 +1290,48 @@
 
         .example-chip:hover .chip-icon {
             color: var(--accent);
-            transform: scale(1.18);
+            transform: scale(1.15);
         }
 
         .example-chip:active {
             transform: translateY(0);
         }
 
-        .example-chip.active {
-            background: linear-gradient(135deg, #C25E0A 0%, #B45309 60%, #92400E 100%);
+        .example-chip.active,
+        .example-chip[aria-pressed="true"] {
+            background: linear-gradient(135deg, #B45309 0%, #92400E 100%);
             color: #FFFFFF !important;
-            border-color: rgba(255, 255, 255, 0.35);
-            border-top-color: rgba(255, 255, 255, 0.65);
+            border-color: #8C4A0E;
             box-shadow: 
-                0 6px 20px rgba(180, 83, 9, 0.42),
-                inset 0 1px 1px rgba(255, 255, 255, 0.45);
+                0 0 0 2px var(--bg-surface),
+                0 0 0 4px var(--accent),
+                0 4px 14px rgba(180, 83, 9, 0.35);
         }
 
-        .example-chip.active span {
+        .example-chip.active span,
+        .example-chip[aria-pressed="true"] span {
             color: #FFFFFF !important;
         }
 
-        .example-chip.active .chip-icon {
+        .example-chip.active .chip-icon,
+        .example-chip[aria-pressed="true"] .chip-icon {
             color: #FFFFFF !important;
         }
 
         .example-chip-tag {
-            font-size: 0.66rem;
+            font-size: var(--text-2xs, 0.75rem);
             font-weight: 700;
-            padding: 0.12rem 0.45rem;
-            border-radius: 12px;
+            padding: 0.1rem 0.4rem;
+            border-radius: var(--radius-xs, 4px);
             background: rgba(87, 48, 2, 0.08);
-            backdrop-filter: blur(4px);
-            color: #573002;
+            color: var(--text-main);
             border: 1px solid rgba(87, 48, 2, 0.16);
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
+            letter-spacing: 0.02em;
         }
 
-        .example-chip.active .example-chip-tag {
-            background: rgba(255, 255, 255, 0.24);
+        .example-chip.active .example-chip-tag,
+        .example-chip[aria-pressed="true"] .example-chip-tag {
+            background: rgba(255, 255, 255, 0.25);
             color: #FFFFFF !important;
             border-color: rgba(255, 255, 255, 0.4);
         }
@@ -1779,7 +1852,7 @@
             }
 
             .feature-box {
-                padding: 1.5rem 1.25rem;
+                padding: 1.75rem 1.5rem;
             }
 
             .term-card {
@@ -1988,70 +2061,87 @@
                     <span class="examples-toolbar-title-icon">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
                     </span>
-                    Try These Examples:
+                    Try these examples:
                 </span>
-                <span style="font-size: 0.78rem; color: var(--text-muted);">Click any example to load code & compile instantly</span>
+                <span style="font-size: var(--text-xs, 0.8125rem); color: var(--text-muted);">Click any example to load code & compile instantly</span>
             </div>
-            <div class="examples-chips-wrapper">
-                <button class="example-chip active" data-preset="fizzbuzz" onclick="selectPreset('fizzbuzz', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 18 12 6 20"></polygon></svg>
-                    <span>FizzBuzz</span>
-                    <span class="example-chip-tag">Stdio</span>
-                </button>
-                <button class="example-chip" data-preset="hello" onclick="selectPreset('hello', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                    <span>Hello World</span>
-                </button>
-                <button class="example-chip" data-preset="fibonacci" onclick="selectPreset('fibonacci', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-                    <span>Fibonacci</span>
-                    <span class="example-chip-tag">Recursion</span>
-                </button>
-                <button class="example-chip" data-preset="pointers" onclick="selectPreset('pointers', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
-                    <span>Pointers</span>
-                </button>
-                <button class="example-chip" data-preset="arrays" onclick="selectPreset('arrays', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                    <span>Arrays & Indexing</span>
-                </button>
-                <button class="example-chip" data-preset="pointer_arith" onclick="selectPreset('pointer_arith', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
-                    <span>Pointer Arithmetic</span>
-                </button>
-                <button class="example-chip" data-preset="control_flow" onclick="selectPreset('control_flow', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
-                    <span>Nested Control Flow</span>
-                </button>
-                <button class="example-chip" data-preset="function_calls" onclick="selectPreset('function_calls', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                    <span>Function Calls</span>
-                    <span class="example-chip-tag">ABI</span>
-                </button>
-                <button class="example-chip" data-preset="optimization" onclick="selectPreset('optimization', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
-                    <span>Optimization</span>
-                    <span class="example-chip-tag">Constant Folding</span>
-                </button>
-                <button class="example-chip" data-preset="err_syntax" onclick="selectPreset('err_syntax', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <span>Syntax Error</span>
-                    <span class="example-chip-tag">[E102]</span>
-                </button>
-                <button class="example-chip" data-preset="err_semantic" onclick="selectPreset('err_semantic', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    <span>Semantic Error</span>
-                    <span class="example-chip-tag">[E203]</span>
-                </button>
-                <button class="example-chip" data-preset="err_structs" onclick="selectPreset('err_structs', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                    <span>Structs</span>
-                    <span class="example-chip-tag">Roadmap</span>
-                </button>
-                <button class="example-chip" data-preset="bitwise" onclick="selectPreset('bitwise', this)">
-                    <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-                    <span>Bitwise Logic</span>
-                </button>
+            <div class="examples-categories-grid">
+                <div class="example-cat-group">
+                    <span class="example-cat-label">Fundamentals</span>
+                    <div class="example-cat-chips">
+                        <button class="example-chip active" data-preset="fizzbuzz" aria-pressed="true" onclick="selectPreset('fizzbuzz', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 18 12 6 20"></polygon></svg>
+                            <span>FizzBuzz</span>
+                            <span class="example-chip-tag">Stdio</span>
+                        </button>
+                        <button class="example-chip" data-preset="hello" aria-pressed="false" onclick="selectPreset('hello', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                            <span>Hello World</span>
+                        </button>
+                        <button class="example-chip" data-preset="fibonacci" aria-pressed="false" onclick="selectPreset('fibonacci', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                            <span>Fibonacci</span>
+                            <span class="example-chip-tag">Recursion</span>
+                        </button>
+                        <button class="example-chip" data-preset="control_flow" aria-pressed="false" onclick="selectPreset('control_flow', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"></path><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><path d="M18 9a9 9 0 0 1-9 9"></path></svg>
+                            <span>Control Flow</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="example-cat-group">
+                    <span class="example-cat-label">Memory &amp; ABI</span>
+                    <div class="example-cat-chips">
+                        <button class="example-chip" data-preset="pointers" aria-pressed="false" onclick="selectPreset('pointers', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+                            <span>Pointers</span>
+                        </button>
+                        <button class="example-chip" data-preset="arrays" aria-pressed="false" onclick="selectPreset('arrays', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            <span>Arrays</span>
+                        </button>
+                        <button class="example-chip" data-preset="pointer_arith" aria-pressed="false" onclick="selectPreset('pointer_arith', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg>
+                            <span>Pointer Arith</span>
+                        </button>
+                        <button class="example-chip" data-preset="function_calls" aria-pressed="false" onclick="selectPreset('function_calls', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                            <span>ABI Calls</span>
+                            <span class="example-chip-tag">ABI</span>
+                        </button>
+                        <button class="example-chip" data-preset="bitwise" aria-pressed="false" onclick="selectPreset('bitwise', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
+                            <span>Bitwise Logic</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="example-cat-group">
+                    <span class="example-cat-label">Diagnostics &amp; Optimizer</span>
+                    <div class="example-cat-chips">
+                        <button class="example-chip" data-preset="optimization" aria-pressed="false" onclick="selectPreset('optimization', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                            <span>Constant Folding</span>
+                            <span class="example-chip-tag">Opt</span>
+                        </button>
+                        <button class="example-chip" data-preset="err_syntax" aria-pressed="false" onclick="selectPreset('err_syntax', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                            <span>Syntax Error</span>
+                            <span class="example-chip-tag">[E102]</span>
+                        </button>
+                        <button class="example-chip" data-preset="err_semantic" aria-pressed="false" onclick="selectPreset('err_semantic', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                            <span>Semantic Error</span>
+                            <span class="example-chip-tag">[E203]</span>
+                        </button>
+                        <button class="example-chip" data-preset="err_structs" aria-pressed="false" onclick="selectPreset('err_structs', this)">
+                            <svg class="chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            <span>Structs</span>
+                            <span class="example-chip-tag">Roadmap</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2065,7 +2155,7 @@
 
                 <div class="ide-controls">
                     <div class="ide-controls-row-top">
-                        <label for="example-picker" style="font-size: 0.82rem; color: var(--text-muted);">Presets:</label>
+                        <label for="example-picker" style="font-size: var(--text-xs, 0.8125rem); color: var(--text-muted); font-weight: 600;">Presets:</label>
                         <select id="example-picker" class="select-styled" onchange="selectPreset(this.value)">
                             <optgroup label="Core Fundamentals">
                                 <option value="fizzbuzz" selected>FizzBuzz with Variadic printf</option>
@@ -2125,8 +2215,11 @@
 
                 <div class="ide-pane">
                     <div class="pane-bar">
-                        <span class="pane-label">C Source Code</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted);">main.c</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="pane-label">C Source Code</span>
+                            <span id="current-preset-badge" style="font-size: var(--text-2xs, 0.75rem); background: rgba(180, 83, 9, 0.1); color: var(--accent); padding: 0.12rem 0.5rem; border-radius: var(--radius-xs, 4px); font-family: var(--font-code); font-weight: 600; border: 1px solid rgba(180, 83, 9, 0.2);">Preset: FizzBuzz</span>
+                        </div>
+                        <span style="font-size: var(--text-2xs, 0.75rem); color: var(--text-muted); font-family: var(--font-code);">main.c</span>
                     </div>
                     <textarea id="source-editor" class="code-textarea" spellcheck="false"></textarea>
                 </div>
@@ -2142,7 +2235,7 @@
                             <button class="ide-tab" onclick="setTab('ast', this)">Typed AST</button>
                             <button class="ide-tab" onclick="setTab('tokens', this)">Tokens</button>
                         </div>
-                        <button onclick="copyCurrentOutput()" style="background: transparent; border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                        <button class="btn-ghost" onclick="copyCurrentOutput()" title="Copy current tab output">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>Copy
                         </button>
                     </div>
@@ -2504,14 +2597,26 @@ int main() {
         function selectPreset(key, btn) {
             const editor = document.getElementById('source-editor');
             const picker = document.getElementById('example-picker');
+            const badge = document.getElementById('current-preset-badge');
             editor.value = PRESETS[key] || '';
             if (picker) picker.value = key;
-            document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
-            if (btn) {
-                btn.classList.add('active');
-            } else {
-                const matchingChip = document.querySelector(`.example-chip[data-preset="${key}"]`);
-                if (matchingChip) matchingChip.classList.add('active');
+            document.querySelectorAll('.example-chip').forEach(c => {
+                c.classList.remove('active');
+                c.setAttribute('aria-pressed', 'false');
+            });
+            let activeChip = btn;
+            if (!activeChip) {
+                activeChip = document.querySelector(`.example-chip[data-preset="${key}"]`);
+            }
+            if (activeChip) {
+                activeChip.classList.add('active');
+                activeChip.setAttribute('aria-pressed', 'true');
+            }
+            if (badge) {
+                const opt = picker && picker.options[picker.selectedIndex] ? picker.options[picker.selectedIndex] : null;
+                const name = opt ? opt.text.split('(')[0].trim() : key;
+                badge.textContent = 'Preset: ' + name;
+                badge.style.color = 'var(--accent)';
             }
 
             runCompiler();
@@ -2523,9 +2628,17 @@ int main() {
 
         function clearEditor() {
             const editor = document.getElementById('source-editor');
+            const badge = document.getElementById('current-preset-badge');
             editor.value = '';
             editor.focus();
-            document.querySelectorAll('.example-chip').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.example-chip').forEach(c => {
+                c.classList.remove('active');
+                c.setAttribute('aria-pressed', 'false');
+            });
+            if (badge) {
+                badge.textContent = 'Empty Buffer';
+                badge.style.color = 'var(--text-muted)';
+            }
             runCompiler();
         }
 
@@ -4047,6 +4160,21 @@ int main() {
                 }
             }
         });
+
+        const sourceEditor = document.getElementById('source-editor');
+        if (sourceEditor) {
+            sourceEditor.addEventListener('input', function() {
+                const badge = document.getElementById('current-preset-badge');
+                if (badge && !badge.textContent.includes('(Modified)')) {
+                    badge.textContent += ' (Modified)';
+                    badge.style.color = 'var(--text-muted)';
+                }
+                document.querySelectorAll('.example-chip').forEach(c => {
+                    c.classList.remove('active');
+                    c.setAttribute('aria-pressed', 'false');
+                });
+            });
+        }
 
         loadPreset('fizzbuzz');
     </script>
